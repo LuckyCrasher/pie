@@ -1,2 +1,2 @@
-# pie
+# PIE
 PGM Image Editor
