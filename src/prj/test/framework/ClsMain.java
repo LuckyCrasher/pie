@@ -15,8 +15,8 @@ public class ClsMain {
 
 	// FRAMEWORK RELATED CONSTANTS AND VARIABLES
 
-	private static HashMap<Integer, int[][]> aiGrauWert = new HashMap<>();
-	private static HashMap<Integer, HashMap<String, Object>> hmLayer = new HashMap<>();
+	private static final HashMap<Integer, int[][]> aiGrauWert = new HashMap<>();
+	private static final HashMap<Integer, HashMap<String, Object>> hmLayer = new HashMap<>();
 	private static int iCurrLayer = 0;
 	private static int iSizeX;
 	private static int iSizeY;
@@ -28,16 +28,12 @@ public class ClsMain {
 	private static String sLastAction = "";
 	private static boolean useVT100 = false;
 	private static final Scanner sc = new Scanner(System.in);
-	private static final String sFsSeperator = System.getProperty("file.separator");
+	private static final String sFsSeparator = System.getProperty("file.separator");
 
 	// FRAMEWORK RELATED CONSTANTS AND VARIABLES ------------- END
 	// FRAMEWORK RELATED METHODS
 
 	private static void fnShowImage(){
-		if (!bFileLoaded) {
-			sLastAction = "Du musst vorher ein Bild Laden!!!";
-			return;
-		}
 		JFrame frame = new JFrame("Image Viewer");
 		frame.setSize(iSizeX, iSizeY);
 
@@ -57,13 +53,13 @@ public class ClsMain {
 		jd.setModal(true);
 		jd.setAlwaysOnTop(true);
 		jd.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
-		final JFileChooser fc = new JFileChooser("."+sFsSeperator);
+		final JFileChooser fc = new JFileChooser("."+ sFsSeparator);
 		jd.setVisible(false);
 		int userSelection;
 
 		FileFilter filter = new FileFilter() {
 			public String getDescription() {
-				return "Portable Graymap (*.pgm)";
+				return "Portable GreyMap (*.pgm)";
 			}
 			public boolean accept(File f) {
 				if (f.isDirectory()) {
@@ -73,7 +69,6 @@ public class ClsMain {
 				}
 			}
 		};
-		//fc.addChoosableFileFilter(filter);
 		fc.setFileFilter(filter);
 
 		if (mode) {
@@ -121,10 +116,6 @@ public class ClsMain {
 	}
 
 	private static void fnSaveToFile(){
-		if (!bFileLoaded) {
-			sLastAction = "Du musst vorher ein Bild Laden!!!";
-			return;
-		}
 		String sFileNamePath = fnFileDialog(true);
 
 		if (sFileNamePath == null){
@@ -160,11 +151,16 @@ public class ClsMain {
 		}
 	}
 
-	private static void fnLoadFromFile() {
-		String  sFileNamePath = fnFileDialog(false);
-		if (sFileNamePath == null) {
-			sLastAction = "Abgebrochen?";
-			return;
+	private static void fnLoadFromFile(String sFilePath) {
+		String sFileNamePath;
+		if (sFilePath != null){
+			sFileNamePath = sFilePath;
+		} else {
+			sFileNamePath = fnFileDialog(false);
+			if (sFileNamePath == null) {
+				sLastAction = "Abgebrochen?";
+				return;
+			}
 		}
 
 		String sTemp;
@@ -201,7 +197,7 @@ public class ClsMain {
 			hmTemp.put("iSizeY", iSizeY);
 			hmTemp.put("bFileSaved", true);
 			hmTemp.put("sFileNameSave", "");
-			hmTemp.put("sFileNameLoad", "");
+			hmTemp.put("sFileNameLoad", sFileNamePath);
 			hmTemp.put("bFileLoaded", false);
 			hmTemp.put("iPosArray", iCurrLayer);
 			hmLayer.put(iCurrLayer, hmTemp);
@@ -235,22 +231,23 @@ public class ClsMain {
 
 	private static void fnTitle(){
 		int iRand = ThreadLocalRandom.current().nextInt(1,4);
-		String title1 = "     ########  #### ######## \n" +
-				"     ##     ##  ##  ##       \n" +
-				"     ##     ##  ##  ##       \n" +
-				"     ########   ##  ######   \n" +
-				"     ##         ##  ##       \n" +
-				"     ##         ##  ##       \n" +
-				"     ##        #### ######## ";
+		String title1 = ""+
+				"     ###### #### ###### \n" +
+				"     ##   ## ##  ##       \n" +
+				"     ######  ##  ####   \n" +
+				"     ##      ##  ##       \n" +
+				"     ##     #### ###### ";
 
-		String title2 = "     ██████╗  ██╗ ███████╗\n" +
+		String title2 = ""+
+				"     ██████╗  ██╗ ███████╗\n" +
 				"     ██╔══██╗ ██║ ██╔════╝\n" +
 				"     ██████╔╝ ██║ █████╗  \n" +
 				"     ██╔═══╝  ██║ ██╔══╝  \n" +
 				"     ██║      ██║ ███████╗\n" +
 				"     ╚═╝      ╚═╝ ╚══════╝";
 
-		String title3 = "       _____ _____ ______ \n" +
+		String title3 = ""+
+				"       _____ _____ ______ \n" +
 				"      |  __ \\\\_   _|  ____|\n" +
 				"      | |__) || | | |__   \n" +
 				"      |  ___/ | | |  __|  \n" +
@@ -316,10 +313,6 @@ public class ClsMain {
 	}
 
 	private static void fnMenuLighten(){
-		if (!bFileLoaded) {
-			sLastAction += "Du musst vorher ein Bild Laden!!!";
-			return;
-		}
 		int iAmountL = 0;
 		int [] point0; int[] point1;
 		point0 = new int[]{0, 0};
@@ -450,11 +443,6 @@ public class ClsMain {
 	}
 
 	private static void fnMenuBlur() {
-		if (!bFileLoaded) {
-			sLastAction += "Du musst vorher ein Bild Laden!!!";
-			return;
-		}
-
 		int iAmountB = 1;
 		int iSizeB = 3;
 		int[] point0 = {0,0};
@@ -551,11 +539,6 @@ public class ClsMain {
 	}
 
 	private static void fnMenuInvert() {
-		if (!bFileLoaded) {
-			sLastAction += "Du musst vorher ein Bild Laden!!!";
-			return;
-		}
-
 		String[][] asActions = {
 				{"Um einen Bereich auszuwählen drücke", "A"},
 				{"Bestätigen", "J"},
@@ -599,7 +582,7 @@ public class ClsMain {
 		String[][] asActions = {
 				{"Um zu speichern drücke", "S"},
 				{"Um Abzubrechen drücke", "A"},
-				{"Um trozdem zu schließen drücke", "N"},
+				{"Um trotzdem zu schließen drücke", "N"},
 		};
 		while (true) {
 			fnDrawMenu(asActions, false, null);
@@ -623,6 +606,34 @@ public class ClsMain {
 	}
 
 	private static void fnDrawMenu(String[][] asActions, boolean bShowTooltip, String[][] asTooltip) {
+		String[][] asTempTooltip;
+		if (bShowTooltip) {
+			//count line breaks for temp array
+			int iToolTipLinebreak = 0;
+			for (String[] tooltip : asTooltip) {
+				iToolTipLinebreak += tooltip[1].split("\n").length;
+			}
+			//create new temp array and insert into it
+			asTempTooltip = new String[iToolTipLinebreak][2];
+			int i = 0;
+			int j;
+			for (String[] tooltip : asTooltip) {
+				asTempTooltip[i][0] = tooltip[0]; 					//standard beginning
+				String[] tooltipMulti = tooltip[1].split("\n");	//split because multiline
+				System.out.println(Arrays.toString(tooltipMulti));
+				j = 0;
+				do {
+					System.out.println(tooltipMulti[j]);
+					asTempTooltip[i][1] = tooltipMulti[j];
+					i++;
+					j++;
+				} while (j < tooltipMulti.length);
+			}
+			System.out.println(Arrays.deepToString(asTempTooltip));
+		} else {
+			asTempTooltip = asTooltip;
+		}
+
 		fnClear();
 		fnTitle();
 		StringBuilder sOut = new StringBuilder();
@@ -644,18 +655,27 @@ public class ClsMain {
 
 		String[] sStatus = sLastAction.split("\n");
 		if (bShowTooltip) {
-			int lenTooltip = asTooltip.length;
+			int lenTooltip = asTempTooltip.length;
+
 			for (int line=0;line<=lenTooltip-1;line++) {
 				sOut.append("┃");
-				if (!sStatus[0].equals("")&&!(line>sStatus.length-1)) {
+				//if sLastAction is not empty | aah whatever
+				if (!sStatus[0].equals("") && line<sStatus.length-1) {
+					//Print line of sStatus (sLastAction)
 					sOut.append(String.format(" %-33s│", sStatus[line]));
 				} else {
+					//sLastAction is empty so fill it with space
 					sOut.append(String.format(" %-33s│", " "));
 				}
-				sOut.append(String.format(" %-24s", asTooltip[line][0]));
+				if(asTempTooltip[line][0]!=null){
+					sOut.append(String.format(" %-24s", asTempTooltip[line][0])); // Print first part of Tooltip
+					sOut.append(String.format(" %-19s", asTempTooltip[line][1])); // Print second part of Tooltip
+				}  else {
+					sOut.append(String.format(" %-43s ", asTempTooltip[line][1]));
+				}
 
-				sOut.append(String.format(" %-19s", asTooltip[line][1]));
 				sOut.append("┃\n");
+
 			}
 		} else {
 			for (String line : sStatus) {
@@ -704,7 +724,7 @@ public class ClsMain {
 				sVt100 = "C: AN/[AUS]";
 			}
 			String[][] asActions = new String[][]{
-					{"\"VT100 Contol chars\" benutzen", sVt100},
+					{"\"VT100 Control chars\" benutzen", sVt100},
 					{"", ""},
 					{"Zurück", "Z"}
 			};
@@ -729,10 +749,6 @@ public class ClsMain {
 	}
 
 	private static void fnMenuLayer(){
-		if (!bFileLoaded) {
-			sLastAction += "Du musst vorher ein Bild Laden!!!";
-			return;
-		}
 		while (true) {
 			HashMap<String, Object> hmCurr = hmLayer.get(iCurrLayer);
 			int iLaySizX = Integer.parseInt(String.valueOf(hmCurr.get("iSizeX")));
@@ -744,10 +760,12 @@ public class ClsMain {
 					{"", ""},
 					{"Zurück", "Z"}
 			};
+			String sFilePathLoad = fnWrapper((String) hmCurr.get("sFileNameLoad"), sFsSeparator.charAt(0), 43);
+
 			String[][] asTooltip = {
 					{"Layer Nummer:", String.valueOf(iCurrLayer)},
 					{"Layer Größe:", String.format("%dx%d", iLaySizX, iLaySizY)},
-					{"Geladen von:", (String) hmCurr.get("sFileNameLoad")},
+					{"Geladen von:", "\n"+sFilePathLoad},
 					{"Speicher Ort:", (String) hmCurr.get("sFileNameSave")},
 
 			};
@@ -779,7 +797,7 @@ public class ClsMain {
 					String[] asSize = sSize.split("x");
 					int iNewSizeX = Integer.parseInt(asSize[0]);
 					int iNewSizeY = Integer.parseInt(asSize[1]);
-					fnCreateLayer(iNewLayer, iNewSizeX, iNewSizeY);
+					fnCreateLayer(iNewLayer, iNewSizeY, iNewSizeX);
 					sLastAction = "Layer erstellt";
 					break;
 				case 'z':
@@ -788,6 +806,24 @@ public class ClsMain {
 
 		}
 	}
+
+	private static String fnWrapper(String in, char cBreak, int len){
+		StringBuilder sOut = new StringBuilder();
+		String sTemp;
+		String[] asTemp;
+		sTemp = in.replace(cBreak+"", cBreak+"\n");
+		asTemp = sTemp.split("\n");
+		int i=0;
+		for (String word : asTemp){
+			if ((word.length()+i)>len) {
+				sOut.append("\n");
+				i=0;
+			}
+			sOut.append(word);
+			i += word.length();
+		}
+		return sOut.toString();
+ 	}
 
 	private static char fnUserInput() {
 		String ui = sc.nextLine().toLowerCase(Locale.ROOT);
@@ -800,10 +836,12 @@ public class ClsMain {
 	// INTERFACE RELATED METHODS ------------- END
 	// IMAGE RELATED METHODS
 
-	private static void fnCreateLayer(int iNewLayer, int iNewSizeX, int iNewSizeY){
+	private static void fnCreateLayer(int iNewLayer, int iNewSizeY, int iNewSizeX){
 		aiGrauWert.put(iNewLayer, new int[iNewSizeY][iNewSizeX]);
+		iSizeY = iNewSizeY;
+		iSizeX = iNewSizeX;
 		iCurrLayer = iNewLayer;
-
+		fnFillZeros();
 		HashMap<String, Object> hmTemp = new HashMap<>();
 		hmTemp.put("iSizeX", iNewSizeX);
 		hmTemp.put("iSizeY", iNewSizeY);
@@ -812,6 +850,12 @@ public class ClsMain {
 		hmTemp.put("sFileNameLoad", "");
 		hmTemp.put("bFileLoaded", false);
 		hmLayer.put(iCurrLayer, hmTemp);
+	}
+
+	private static void fnFillZeros(){
+		for (int[] line : aiGrauWert.get(iCurrLayer)){
+			Arrays.fill(line, 0);
+		}
 	}
 
 	private static int[] fnGetPtFromStr(String in) {
@@ -847,7 +891,7 @@ public class ClsMain {
 		}
 	}
 
-	private static int[][] fnRunMask(double[][] aiMask, int iMaskSize, int[] point0, int[] point1){
+	private static int[][] fnRunMask(double[][] aiMask, int iMaskSize, int[] point0, int[] point1) {
 		int[][] aiOut; // New temporary array for image
 		int[][] aiTemp = new int[iSizeY][iSizeX]; // New temporary array for image
 		int iTmpVal;
@@ -918,7 +962,7 @@ public class ClsMain {
 		double my_1 = 0;
 		double my_2 = 0;
 		double p = 0;
-		sLastAction = "Stelle deine Gausßglocke selbst\nein oder verwende das\nEingestellte.\n\nUm Mathematische Fehler" +
+		sLastAction = "Stelle deine Gaußglocke selbst\nein oder verwende das\nEingestellte.\n\nUm Mathematische Fehler" +
 				" zu\nvermeiden wird die Glocke\nAutomatisch um Eins gehoben.";
 		while (true) {
 			String[][] asActions = new String[][]{
@@ -927,11 +971,11 @@ public class ClsMain {
 					{"Um Mikro 1 zu ändern drücke:", "3"},
 					{"Um Mikro 2 zu ändern drücke:", "4"},
 					{"Um P zu ändern drücke:", "5"},
-					{"Um Coeffizient zu ändern drücke:", "6"},
+					{"Um Koeffizient zu ändern drücke:", "6"},
 					{"Um Denominator zu ändern drücke:", "7"},
 					{"", ""},
 					{"Bestätigen:", "J"},
-					{"Zrtück:", "Z"}
+					{"Zurück:", "Z"}
 			};
 			String[][] asTooltip = new String[][]{
 					{"Sigmoid 1:", sig_1+""},
@@ -1086,6 +1130,14 @@ public class ClsMain {
 	// IMAGE RELATED METHODS ----------------- END
 
 	public static void main (String[] args) {
+		fnCreateLayer(0, 300, 400);
+		fnFillZeros();
+		if (args.length > 1){
+			String file = args[1];
+			fnLoadFromFile(file);
+		} else {
+			sLastAction = "Kein Bild geladen !!!";
+		}
 		boolean running = true;
 		String[][] asActions = {
 				{"Bild anzeigen", "D"},
@@ -1100,7 +1152,7 @@ public class ClsMain {
 				{"Um das Programm zu beenden drücke", "Q"}
 		};
 
-		sLastAction = "Kein Bild geladen !!!";
+
 		while (running) {
 			fnDrawMenu(asActions, false, null);
 			sLastAction = "";
@@ -1137,7 +1189,7 @@ public class ClsMain {
 					fnMenuLayer();
 					break;
 				case 'o':
-					fnLoadFromFile();
+					fnLoadFromFile(null);
 					bFileSaved = false;
 					break;
 				case 'e':
