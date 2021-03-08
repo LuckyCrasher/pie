@@ -1,7 +1,5 @@
 package prj.test.framework;
 
-import jdk.nashorn.internal.objects.annotations.Function;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -11,7 +9,6 @@ import java.util.Locale;
 import java.util.Scanner;
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class ClsMain {
@@ -200,7 +197,7 @@ public class ClsMain {
 			hmTemp.put("iSizeY", iSizeY);
 			hmTemp.put("bFileSaved", true);
 			hmTemp.put("sFileNameSave", "");
-			hmTemp.put("sFileNameLoad", "");
+			hmTemp.put("sFileNameLoad", sFileNamePath);
 			hmTemp.put("bFileLoaded", false);
 			hmTemp.put("iPosArray", iCurrLayer);
 			hmLayer.put(iCurrLayer, hmTemp);
@@ -609,6 +606,34 @@ public class ClsMain {
 	}
 
 	private static void fnDrawMenu(String[][] asActions, boolean bShowTooltip, String[][] asTooltip) {
+		String[][] asTempTooltip;
+		if (bShowTooltip) {
+			//count line breaks for temp array
+			int iToolTipLinebreak = 0;
+			for (String[] tooltip : asTooltip) {
+				iToolTipLinebreak += tooltip[1].split("\n").length;
+			}
+			//create new temp array and insert into it
+			asTempTooltip = new String[iToolTipLinebreak][2];
+			int i = 0;
+			int j;
+			for (String[] tooltip : asTooltip) {
+				asTempTooltip[i][0] = tooltip[0]; 					//standard beginning
+				String[] tooltipMulti = tooltip[1].split("\n");	//split because multiline
+				System.out.println(Arrays.toString(tooltipMulti));
+				j = 0;
+				do {
+					System.out.println(tooltipMulti[j]);
+					asTempTooltip[i][1] = tooltipMulti[j];
+					i++;
+					j++;
+				} while (j < tooltipMulti.length);
+			}
+			System.out.println(Arrays.deepToString(asTempTooltip));
+		} else {
+			asTempTooltip = asTooltip;
+		}
+
 		fnClear();
 		fnTitle();
 		StringBuilder sOut = new StringBuilder();
@@ -630,18 +655,27 @@ public class ClsMain {
 
 		String[] sStatus = sLastAction.split("\n");
 		if (bShowTooltip) {
-			int lenTooltip = asTooltip.length;
+			int lenTooltip = asTempTooltip.length;
+
 			for (int line=0;line<=lenTooltip-1;line++) {
 				sOut.append("┃");
-				if (!sStatus[0].equals("")&&!(line>sStatus.length-1)) {
+				//if sLastAction is not empty | aah whatever
+				if (!sStatus[0].equals("") && line<sStatus.length-1) {
+					//Print line of sStatus (sLastAction)
 					sOut.append(String.format(" %-33s│", sStatus[line]));
 				} else {
+					//sLastAction is empty so fill it with space
 					sOut.append(String.format(" %-33s│", " "));
 				}
-				sOut.append(String.format(" %-24s", asTooltip[line][0]));
+				if(asTempTooltip[line][0]!=null){
+					sOut.append(String.format(" %-24s", asTempTooltip[line][0])); // Print first part of Tooltip
+					sOut.append(String.format(" %-19s", asTempTooltip[line][1])); // Print second part of Tooltip
+				}  else {
+					sOut.append(String.format(" %-43s ", asTempTooltip[line][1]));
+				}
 
-				sOut.append(String.format(" %-19s", asTooltip[line][1]));
 				sOut.append("┃\n");
+
 			}
 		} else {
 			for (String line : sStatus) {
@@ -726,10 +760,12 @@ public class ClsMain {
 					{"", ""},
 					{"Zurück", "Z"}
 			};
+			String sFilePathLoad = fnWrapper((String) hmCurr.get("sFileNameLoad"), sFsSeparator.charAt(0), 43);
+
 			String[][] asTooltip = {
 					{"Layer Nummer:", String.valueOf(iCurrLayer)},
 					{"Layer Größe:", String.format("%dx%d", iLaySizX, iLaySizY)},
-					{"Geladen von:", (String) hmCurr.get("sFileNameLoad")},
+					{"Geladen von:", "\n"+sFilePathLoad},
 					{"Speicher Ort:", (String) hmCurr.get("sFileNameSave")},
 
 			};
@@ -770,6 +806,24 @@ public class ClsMain {
 
 		}
 	}
+
+	private static String fnWrapper(String in, char cBreak, int len){
+		StringBuilder sOut = new StringBuilder();
+		String sTemp;
+		String[] asTemp;
+		sTemp = in.replace(cBreak+"", cBreak+"\n");
+		asTemp = sTemp.split("\n");
+		int i=0;
+		for (String word : asTemp){
+			if ((word.length()+i)>len) {
+				sOut.append("\n");
+				i=0;
+			}
+			sOut.append(word);
+			i += word.length();
+		}
+		return sOut.toString();
+ 	}
 
 	private static char fnUserInput() {
 		String ui = sc.nextLine().toLowerCase(Locale.ROOT);
