@@ -11,5 +11,7 @@ This started as a school project with a two-week deadline but grew pretty quickl
 
 ![Image of the PIE Interface][PIE_HOME]
 
+PIE's Interface is written in German, I will change this as soon as it is submitted to my School.
+
 
 [PIE_HOME]: https://ibb.co/WW9TTFD
