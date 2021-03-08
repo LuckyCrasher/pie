@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Scanner;
 import javax.swing.*;
@@ -14,18 +15,20 @@ public class ClsMain {
 
 	// FRAMEWORK RELATED CONSTANTS AND VARIABLES
 
-	private static int[][] aiGrauWert;
+	private static HashMap<Integer, int[][]> aiGrauWert = new HashMap<>();
+	private static HashMap<Integer, HashMap<String, Object>> hmLayer = new HashMap<>();
+	private static int iCurrLayer = 0;
 	private static int iSizeX;
 	private static int iSizeY;
-	private static final Scanner sc = new Scanner(System.in);
-	private static String sLastAction = "";
 	private static boolean bFileSaved = true;
 	private static String sFileNameSave = "";
 	private static String sFileNameLoad = "";
 	private static boolean bFileLoaded = false;
-	private static final String sFsSeperator = System.getProperty("file.separator");
 	private static String sInputOpt = "";
+	private static String sLastAction = "";
 	private static boolean useVT100 = false;
+	private static final Scanner sc = new Scanner(System.in);
+	private static final String sFsSeperator = System.getProperty("file.separator");
 
 	// FRAMEWORK RELATED CONSTANTS AND VARIABLES ------------- END
 	// FRAMEWORK RELATED METHODS
@@ -108,7 +111,9 @@ public class ClsMain {
 		BufferedImage image = new BufferedImage(iSizeX, iSizeY, BufferedImage.TYPE_INT_RGB);
 		for (int y=0; y<=iSizeY-1; y++) {
 			for (int x=0; x<=iSizeX-1; x++){
-				Color color = new Color(aiGrauWert[y][x], aiGrauWert[y][x], aiGrauWert[y][x]);
+				Color color = new Color(aiGrauWert.get(iCurrLayer)[y][x],
+						aiGrauWert.get(iCurrLayer)[y][x],
+						aiGrauWert.get(iCurrLayer)[y][x]);
 				image.setRGB(x, y, color.getRGB());
 			}
 		}
@@ -138,7 +143,7 @@ public class ClsMain {
 			w.write("400 300" + System.lineSeparator());
 			w.write("255" + System.lineSeparator());
 
-			for (int[] line : aiGrauWert) {
+			for (int[] line : aiGrauWert.get(iCurrLayer)) {
 				for (int val : line) {
 					w.write(val + System.lineSeparator());
 				}
@@ -181,15 +186,26 @@ public class ClsMain {
 			iSizeX = Integer.parseInt(asHeader[0]);
 			iSizeY = Integer.parseInt(asHeader[1]);
 			sLastAction += String.format("Größe des Bildes: X: %d Y: %d %n", iSizeX, iSizeY);
-			aiGrauWert = new int[iSizeY][iSizeX];
+			aiGrauWert.put(iCurrLayer, new int[iSizeY][iSizeX]);
 
 			for (int y = 0; y <= iSizeY - 1; y++) {
 				for (int x = 0; x <= iSizeX - 1; x++) {
 					line = reader.readLine();
-					aiGrauWert[y][x] = Integer.parseInt(line);
+					aiGrauWert.get(iCurrLayer)[y][x] = Integer.parseInt(line);
 				}
 			}
 			reader.close();
+
+			HashMap<String, Object> hmTemp = new HashMap<>();
+			hmTemp.put("iSizeX", iSizeX);
+			hmTemp.put("iSizeY", iSizeY);
+			hmTemp.put("bFileSaved", true);
+			hmTemp.put("sFileNameSave", "");
+			hmTemp.put("sFileNameLoad", "");
+			hmTemp.put("bFileLoaded", false);
+			hmTemp.put("iPosArray", iCurrLayer);
+			hmLayer.put(iCurrLayer, hmTemp);
+
 			sFileNameLoad = sFileNamePath;
 			bFileLoaded = true;
 			sLastAction = "Bild geladen";
@@ -607,7 +623,6 @@ public class ClsMain {
 	}
 
 	private static void fnDrawMenu(String[][] asActions, boolean bShowTooltip, String[][] asTooltip) {
-		//TODO Create Tooltip
 		fnClear();
 		fnTitle();
 		StringBuilder sOut = new StringBuilder();
@@ -713,6 +728,67 @@ public class ClsMain {
 		}
 	}
 
+	private static void fnMenuLayer(){
+		if (!bFileLoaded) {
+			sLastAction += "Du musst vorher ein Bild Laden!!!";
+			return;
+		}
+		while (true) {
+			HashMap<String, Object> hmCurr = hmLayer.get(iCurrLayer);
+			int iLaySizX = Integer.parseInt(String.valueOf(hmCurr.get("iSizeX")));
+			int iLaySizY = Integer.parseInt(String.valueOf(hmCurr.get("iSizeY")));
+
+			String[][] asActions = {
+					{"Um den Layer zu wechseln drücke", "W"},
+					{"Um einen layer zu erstellen drücke", "N"},
+					{"", ""},
+					{"Zurück", "Z"}
+			};
+			String[][] asTooltip = {
+					{"Layer Nummer:", String.valueOf(iCurrLayer)},
+					{"Layer Größe:", String.format("%dx%d", iLaySizX, iLaySizY)},
+					{"Geladen von:", (String) hmCurr.get("sFileNameLoad")},
+					{"Speicher Ort:", (String) hmCurr.get("sFileNameSave")},
+
+			};
+			fnDrawMenu(asActions, true, asTooltip);
+			char cOption = fnUserInput();
+			switch (cOption) {
+				case 'w':
+					sLastAction = "Gib die Zahl des Layers ein";
+					for (int key: hmLayer.keySet()){
+						sInputOpt = sInputOpt.concat(String.format("%d,", key));
+					}
+					fnDrawMenu(asActions, true, asTooltip);
+					int iLayer = sc.nextInt();sc.nextLine();
+					if (iLayer<0|iLayer>7) {sLastAction="Layer nicht vorhanden"; break;}
+					iCurrLayer = iLayer;
+					break;
+				case 'n':
+					sLastAction = "Gib an welche Nummer\nder layer haben soll";
+					sInputOpt="(Ganzzahl größer als 0)";
+					fnDrawMenu(asActions, true, asTooltip);
+					int iNewLayer = sc.nextInt();sc.nextLine();
+					sLastAction = "Gib an wie Groß der Layer sein\n" +
+							"soll. Diese Zahl wird beim Laden\n" +
+							"eines Bildes auf den Layer\nverändert";
+					sInputOpt = "z.B. 300x400";
+					fnDrawMenu(asActions, true, asTooltip);
+					String sSize = sc.nextLine();
+					if (!sSize.contains("x")){sLastAction="Du musst schon eine valide größe eingeben"; break;}
+					String[] asSize = sSize.split("x");
+					int iNewSizeX = Integer.parseInt(asSize[0]);
+					int iNewSizeY = Integer.parseInt(asSize[1]);
+					fnCreateLayer(iNewLayer, iNewSizeX, iNewSizeY);
+					sLastAction = "Layer erstellt";
+					break;
+				case 'z':
+					return;
+			}
+
+		}
+	}
+
 	private static char fnUserInput() {
 		String ui = sc.nextLine().toLowerCase(Locale.ROOT);
 		if (ui.equals("")) {
@@ -723,6 +799,20 @@ public class ClsMain {
 
 	// INTERFACE RELATED METHODS ------------- END
 	// IMAGE RELATED METHODS
+
+	private static void fnCreateLayer(int iNewLayer, int iNewSizeX, int iNewSizeY){
+		aiGrauWert.put(iNewLayer, new int[iNewSizeY][iNewSizeX]);
+		iCurrLayer = iNewLayer;
+
+		HashMap<String, Object> hmTemp = new HashMap<>();
+		hmTemp.put("iSizeX", iNewSizeX);
+		hmTemp.put("iSizeY", iNewSizeY);
+		hmTemp.put("bFileSaved", false);
+		hmTemp.put("sFileNameSave", "");
+		hmTemp.put("sFileNameLoad", "");
+		hmTemp.put("bFileLoaded", false);
+		hmLayer.put(iCurrLayer, hmTemp);
+	}
 
 	private static int[] fnGetPtFromStr(String in) {
 		String[] sPoint = in.split(",");
@@ -736,14 +826,14 @@ public class ClsMain {
 		int iVal;
 		for (int y=point0[1]; y <= point1[1] - 1; y++) {
 			for (int x=point0[0]; x <= point1[0] - 1; x++) {
-				iVal = aiGrauWert[y][x] + iAmount;
+				iVal = aiGrauWert.get(iCurrLayer)[y][x] + iAmount;
 				if (iVal < 0) {
 					iVal = 0;
 				}
 				if (iVal > 255){
 					iVal = 255;
 				}
-				aiGrauWert[y][x] = iVal;
+				aiGrauWert.get(iCurrLayer)[y][x] = iVal;
 			}
 		}
 		sLastAction += "Bild Erhellt";
@@ -752,7 +842,7 @@ public class ClsMain {
 	private static void fnInvert(int[] point0, int[] point1) {
 		for (int y=point0[1]; y<=point1[1]-1;y++) {
 			for (int x=point0[0]; x<=point1[0]-1; x++){
-				aiGrauWert[y][x] = aiGrauWert[y][x]*-1 + 255;
+				aiGrauWert.get(iCurrLayer)[y][x] = aiGrauWert.get(iCurrLayer)[y][x]*-1 + 255;
 			}
 		}
 	}
@@ -785,7 +875,7 @@ public class ClsMain {
 						if (iNewPosX < 0){continue;}
 						if (iNewPosX >= iSizeX){continue;}
 
-						iTmpVal += aiGrauWert[iNewPosY][iNewPosX] * aiMask[iMaskIndY][iMaskIndX];
+						iTmpVal += aiGrauWert.get(iCurrLayer)[iNewPosY][iNewPosX] * aiMask[iMaskIndY][iMaskIndX];
 						iSteps += aiMask[iMaskIndY][iMaskIndX];
 					}
 				}
@@ -796,7 +886,7 @@ public class ClsMain {
 				aiTemp[yImg][xImg] = iTmpVal;
 			}
 		}
-		aiOut = aiGrauWert;
+		aiOut = aiGrauWert.get(iCurrLayer);
 		for (int y=point0[1]; y<=point1[1]-1; y++){
 			if (point1[0] - point0[0] >= 0)
 				System.arraycopy(aiTemp[y], point0[0], aiOut[y], point0[0], point1[0] - point0[0]);
@@ -816,7 +906,7 @@ public class ClsMain {
 		fnCreateMaskString(mask);
 		int[][] aiTemp = fnRunMask(mask, iSize, position0, position1);
 		for (int y=0; y<=iSizeY-1; y++){
-			if (iSizeX - 1 + 1 >= 0) System.arraycopy(aiTemp[y], 0, aiGrauWert[y], 0, iSizeX);
+			if (iSizeX - 1 + 1 >= 0) System.arraycopy(aiTemp[y], 0, aiGrauWert.get(iCurrLayer)[y], 0, iSizeX);
 		}
 	}
 
@@ -967,7 +1057,7 @@ public class ClsMain {
 					try {
 						int[][] aiTemp = fnRunMask(mask, iSize, point0, point1);
 						for (int y = 0; y <= iSizeY - 1; y++) {
-							if (iSizeX - 1 + 1 >= 0) System.arraycopy(aiTemp[y], 0, aiGrauWert[y], 0, iSizeX);
+							if (iSizeX - 1 + 1 >= 0) System.arraycopy(aiTemp[y], 0, aiGrauWert.get(iCurrLayer)[y], 0, iSizeX);
 						}
 					} catch (ArithmeticException e) {
 						sLastAction = "Mathematischer fehlschlag";
@@ -1001,10 +1091,11 @@ public class ClsMain {
 				{"Bild anzeigen", "D"},
 				{"Informationen zum Bild zeigen", "I"},
 				{"Bild Invertieren","N"},
-				{"Helligkeit verändern", "L"},
+				{"Helligkeit verändern", "H"},
 				{"Bild Verwischen", "B"},
 				{"Bild speichern", "S"},
 				{"Bild öffnen", "O"},
+				{"Layer", "L"},
 				{"Einstellungen", "E"},
 				{"Um das Programm zu beenden drücke", "Q"}
 		};
@@ -1018,7 +1109,7 @@ public class ClsMain {
 				case 'd':
 					fnShowImage();
 					break;
-				case 'l':
+				case 'h':
 					fnMenuLighten();
 					bFileSaved = false;
 					break;
@@ -1041,6 +1132,9 @@ public class ClsMain {
 					break;
 				case 'i':
 					fnMenuShowInfo();
+					break;
+				case 'l':
+					fnMenuLayer();
 					break;
 				case 'o':
 					fnLoadFromFile();
