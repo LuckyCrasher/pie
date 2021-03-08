@@ -12,4 +12,4 @@ This started as a school project with a two-week deadline but grew pretty quickl
 ![Image of the PIE Interface][PIE_HOME]
 
 
-[PIE_HOME]: https://i.ibb.co/PZpSS4T/PIE.png
+[PIE_HOME]: https://ibb.co/WW9TTFD
