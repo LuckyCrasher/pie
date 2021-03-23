@@ -20,25 +20,50 @@ public class ClsMain {
 	private static int iCurrLayer = 0;
 	private static int iSizeX;
 	private static int iSizeY;
+
+	private static char cTopRightCornerBold = '+';
+	private static char cTopLeftCornerBold = '+';
+	private static char cLeftBarBold = '+';
+	private static char cRightBarBold = '+';
+	private static char cBottomRightCornerBold = '+';
+	private static char cBottomCrossBold = '+';
+	private static char cHorBarBold = '-';
+	private static char cBottomLeftCornerBold = '+';
+	private static char cVertBar = '|';
+	private static char cVertBarBold = '|';
+	private static char cHorBar = '-';
+	private static char cTopCross = '+';
+
 	private static boolean bFileSaved = true;
 	private static String sFileNameSave = "";
 	private static String sFileNameLoad = "";
 	private static boolean bFileLoaded = false;
+
 	private static String sInputOpt = "";
 	private static String sLastAction = "";
 	private static boolean useVT100 = false;
+	private static boolean useBoxChars = false;
 	private static final Scanner sc = new Scanner(System.in);
 	private static final String sFsSeparator = System.getProperty("file.separator");
+
 
 	// FRAMEWORK RELATED CONSTANTS AND VARIABLES ------------- END
 	// FRAMEWORK RELATED METHODS
 
 	private static void fnShowImage(){
+		//
+		// Opens The Image in a small viewing window
+		//
+		if (!bFileLoaded) { // check if a file is already loaded
+			sLastAction = "Du musst vorher ein Bild Laden!!!";
+			return;
+		}
+		//initialize and define needed objects
 		JFrame frame = new JFrame("Image Viewer");
 		frame.setSize(iSizeX, iSizeY);
-
+		//convert image in aiGrauWert to usable image
 		Image img = fnGetImage();
-
+		//Show it with a little trick to create a pop up
 		ImageIcon imgIcon = new ImageIcon(img);
 		JLabel lbl = new JLabel();
 		lbl.setIcon(imgIcon);
@@ -49,17 +74,26 @@ public class ClsMain {
 	}
 
 	private static String fnFileDialog(boolean mode){
+		//
+		// Opens a file dialog to save or open
+		// @param boolean mode True = Open Save dialog;
+		// 					   False = Open Open dialog
+		//
+
+		//define an initialize some stuff
 		final JDialog jd = new JDialog();
 		jd.setModal(true);
 		jd.setAlwaysOnTop(true);
 		jd.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
+		//use the right file system separator
 		final JFileChooser fc = new JFileChooser("."+ sFsSeparator);
 		jd.setVisible(false);
 		int userSelection;
-
+		//add a file Filter and set it as default
 		FileFilter filter = new FileFilter() {
 			public String getDescription() {
-				return "Portable GreyMap (*.pgm)";
+				return "Portable Graymap (*.pgm)";
+
 			}
 			public boolean accept(File f) {
 				if (f.isDirectory()) {
@@ -71,6 +105,7 @@ public class ClsMain {
 		};
 		fc.setFileFilter(filter);
 
+		//Open Save or Open dialog
 		if (mode) {
 			fc.setDialogTitle("Save File");
 			userSelection = fc.showSaveDialog(jd);
@@ -79,6 +114,7 @@ public class ClsMain {
 				File filePath = fc.getSelectedFile();
 				String path = filePath.getAbsolutePath();
 				System.out.println(path);
+				//check if path ends with .pgm
 				if (!path.endsWith(".pgm")){
 					path += ".pgm";
 				}
@@ -93,6 +129,7 @@ public class ClsMain {
 				File filePath = fc.getSelectedFile();
 				String path = filePath.getAbsolutePath();
 				System.out.println(path);
+				//check if path ends with .pgm
 				if (!path.endsWith(".pgm")){
 					return null;
 				}
@@ -103,9 +140,15 @@ public class ClsMain {
 	}
 
 	private static Image fnGetImage() {
+		//
+		//Converts the current loaded image to Usable image
+		//
+
+		//define and initialize a Buffered image
 		BufferedImage image = new BufferedImage(iSizeX, iSizeY, BufferedImage.TYPE_INT_RGB);
 		for (int y=0; y<=iSizeY-1; y++) {
 			for (int x=0; x<=iSizeX-1; x++){
+				//insert color from aiGrauwert into new image
 				Color color = new Color(aiGrauWert.get(iCurrLayer)[y][x],
 						aiGrauWert.get(iCurrLayer)[y][x],
 						aiGrauWert.get(iCurrLayer)[y][x]);
@@ -116,22 +159,31 @@ public class ClsMain {
 	}
 
 	private static void fnSaveToFile(){
+		//
+		// Handles the Saving
+		//
+		if (!bFileLoaded) { // check if a image is loaded
+			sLastAction = "Du musst vorher ein Bild Laden!!!";
+			return;
+		}
 		String sFileNamePath = fnFileDialog(true);
 
-		if (sFileNamePath == null){
+		if (sFileNamePath == null){ // If the file dialog was canceled
 			sLastAction += "Abgebrochen?";
 			return;
 		}
 
 		System.out.printf("Datei wird gespeichert nach %s %n", sFileNamePath);
 		try {
+			//Saving the File to disk
 			File saveFile = new File(sFileNamePath);
 			BufferedWriter w = new BufferedWriter(new PrintWriter(saveFile));
 
 			w.write("P2" + System.lineSeparator());
 			w.write("# CREATOR: The GIMP's PNM Filter Version 1.0" + System.lineSeparator());
 
-			w.write("400 300" + System.lineSeparator());
+			//maybe file is different size so write size to header
+			w.write(String.format("%d %d%s", iSizeX,  iSizeY, System.lineSeparator()));
 			w.write("255" + System.lineSeparator());
 
 			for (int[] line : aiGrauWert.get(iCurrLayer)) {
@@ -152,6 +204,11 @@ public class ClsMain {
 	}
 
 	private static void fnLoadFromFile(String sFilePath) {
+		//
+		// Handles the File loading
+		//
+
+		// if argument was provided
 		String sFileNamePath;
 		if (sFilePath != null){
 			sFileNamePath = sFilePath;
@@ -166,24 +223,23 @@ public class ClsMain {
 		String sTemp;
 		String line;
 		try {
+			//reading the file from disk
 			File file = new File(sFileNamePath);
 			System.out.printf("Reading %s %n", file);
 			BufferedReader reader = new BufferedReader(new FileReader(file));
-
+			//get file Header some useful information
 			String[] asHeader = new String[4];
 			for (int i = 0; i < 4; i++) {
 				line = reader.readLine();
 				asHeader[i] = line;
-				//System.out.println(line);
 			}
-
+			//dynamic image array created by the size contained in the header
 			sTemp = asHeader[asHeader.length - 2];
 			asHeader = sTemp.split(" ");
 			iSizeX = Integer.parseInt(asHeader[0]);
 			iSizeY = Integer.parseInt(asHeader[1]);
 			sLastAction += String.format("Größe des Bildes: X: %d Y: %d %n", iSizeX, iSizeY);
 			aiGrauWert.put(iCurrLayer, new int[iSizeY][iSizeX]);
-
 			for (int y = 0; y <= iSizeY - 1; y++) {
 				for (int x = 0; x <= iSizeX - 1; x++) {
 					line = reader.readLine();
@@ -207,7 +263,6 @@ public class ClsMain {
 			sLastAction = "Bild geladen";
 		} catch (IOException e) {
 			sLastAction += "Beim lesen der Datei ist ein fehler aufgetreten";
-			//sLastAction += Arrays.toString(e.getStackTrace());
 			sLastAction += "Vielleicht war der Name der Datei fehlerhaft";
 		}
 	}
@@ -255,7 +310,7 @@ public class ClsMain {
 				"      |_|   |_____|______|";
 		switch (iRand) {
 			case 1: System.out.println(title1);break;
-			case 2: System.out.println(title2);break;
+			case 2: if(useBoxChars){System.out.println(title2);break;}
 			case 3: System.out.println(title3);break;
 		}
 	}
@@ -443,6 +498,11 @@ public class ClsMain {
 	}
 
 	private static void fnMenuBlur() {
+		if (!bFileLoaded) {
+			sLastAction += "Du musst vorher ein Bild Laden!!!";
+			return;
+		}
+
 		int iAmountB = 1;
 		int iSizeB = 3;
 		int[] point0 = {0,0};
@@ -450,8 +510,8 @@ public class ClsMain {
 		String sBlurFunc = "Mean Blur";
 		while (true){
 			String[][] asActions = {
-					{"Um die \"Blur Function\" zu ändern drücke", "F"},
-					{"Um die Blur stärke einzustellen drücke", "W"},
+					{"Um die \"Convolute Function\" zu ändern drücke", "F"},
+					{"Um die stärke einzustellen drücke", "W"},
 					{"Um die größe der Maske zu verändern drücke", "M"},
 					{"Um einen Bereich zu wählen drücke", "A"},
 					{"", ""},
@@ -476,7 +536,8 @@ public class ClsMain {
 					while(subMenF) {
 						asActions = new String[][]{
 								{"Für einen \"Gaussian Blur\" drücke", "G"},
-								{"Für einen \"Mean (Box) Blur\" drücke", "M"}
+								{"Für einen \"Mean (Box) Blur\" drücke", "M"},
+								{"Für \"Edge Detection\" drücke", "E"}
 						};
 						fnDrawMenu(asActions, false, null);
 						char cBlurFn = fnUserInput();
@@ -484,10 +545,17 @@ public class ClsMain {
 							case 'g':
 								sBlurFunc = "Gaussian Blur";
 								subMenF = false;
+								sLastAction = "Funktion gewählt.";
 								break;
 							case 'm':
 								sBlurFunc = "Mean Blur";
 								subMenF = false;
+								sLastAction = "Funktion gewählt.";
+								break;
+							case 'e':
+								sBlurFunc = "Edge Detection";
+								subMenF = false;
+								sLastAction = "Funktion gewählt.";
 								break;
 							default:
 								sLastAction = "Du musst schon eine Funktion auswählen";
@@ -529,16 +597,33 @@ public class ClsMain {
 					return;
 				case 'b':
 				case 'j':
-					if (sBlurFunc.equals("Mean Blur")){ fnBlurMean(iAmountB, iSizeB, point0, point1);}
-					else fnBlurGaussian(iAmountB, iSizeB);
-					sLastAction += "Bild verwischt";
-					return;
+					switch (sBlurFunc) {
+						case "Mean Blur":
+							fnBlurMean(iAmountB, iSizeB, point0, point1);
+							sLastAction += "Bild verwischt";
+							return;
+						case "Gaussian Blur":
+							fnBlurGaussian(iAmountB, iSizeB, point0, point1);
+							sLastAction += "Bild verwischt";
+							return;
+						case "Edge Detection":
+							fnEdgeDetect(iAmountB, iSizeB, point0, point1);
+							sLastAction += "Bild verwischt";
+							return;
+						default:
+							sLastAction = "Etwas ist falsch gelaufen...";
+							break;
+					}
 			}
 
 		}
 	}
 
 	private static void fnMenuInvert() {
+		if (!bFileLoaded) {
+			sLastAction += "Du musst vorher ein Bild Laden!!!";
+			return;
+		}
 		String[][] asActions = {
 				{"Um einen Bereich auszuwählen drücke", "A"},
 				{"Bestätigen", "J"},
@@ -641,18 +726,18 @@ public class ClsMain {
 		int columns = 80;
 
 		// Top Line
-		sOut.append("┏");
-		for (int width=1;width<=10;width++) sOut.append("━");
+		sOut.append(cTopRightCornerBold);
+		for (int width=1;width<=10;width++) sOut.append(cHorBarBold);
 		sOut.append("(PGM IMAGE EDITOR)"); // 18 chars
 		if (bShowTooltip) {
 			//TODO add Tooltip title
-			for (int width=28;width<=33;width++) sOut.append("━");
-			sOut.append("┯");
-			for (int width=35;width<=columns-1;width++) sOut.append("━");
+			for (int width=28;width<=33;width++) sOut.append(cHorBarBold);
+			sOut.append(cBottomCrossBold);
+			for (int width=35;width<=columns-1;width++) sOut.append(cHorBarBold);
 		} else {
-			for (int width=28;width<=columns-1;width++) sOut.append("━");
+			for (int width=28;width<=columns-1;width++) sOut.append(cHorBarBold);
 		}
-		sOut.append("┓\n");
+		sOut.append(cTopLeftCornerBold).append("\n");
 
 		String[] sStatus = sLastAction.split("\n");
 		if (bShowTooltip) {
@@ -663,10 +748,10 @@ public class ClsMain {
 				//if sLastAction is not empty | aah whatever
 				if (!sStatus[0].equals("") && line<sStatus.length-1) {
 					//Print line of sStatus (sLastAction)
-					sOut.append(String.format(" %-33s│", sStatus[line]));
+					sOut.append(String.format(" %-33s%c", sStatus[line], cVertBar));
 				} else {
 					//sLastAction is empty so fill it with space
-					sOut.append(String.format(" %-33s│", " "));
+					sOut.append(String.format(" %-33s%c", " ", cVertBar));
 				}
 				if(asTempTooltip[line][0]!=null){
 					sOut.append(String.format(" %-24s", asTempTooltip[line][0])); // Print first part of Tooltip
@@ -675,39 +760,39 @@ public class ClsMain {
 					sOut.append(String.format(" %-43s ", asTempTooltip[line][1]));
 				}
 
-				sOut.append("┃\n");
+				sOut.append(cVertBarBold).append("\n");
 
 			}
 		} else {
 			for (String line : sStatus) {
-				sOut.append("┃");
-				sOut.append(String.format(" %-79s┃%n", line));
+				sOut.append(cVertBarBold);
+				sOut.append(String.format(" %-79s%c%n", line, cVertBarBold));
 			}
 		}
-		sOut.append("┠");
+		sOut.append(cLeftBarBold);
 		if (bShowTooltip){
-			for (int width=1;width<=34;width++) sOut.append("─");
-			sOut.append("┴");
-			for (int width=35;width<=columns-1;width++) sOut.append("─");
+			for (int width=1;width<=34;width++) sOut.append(cHorBar);
+			sOut.append(cTopCross);
+			for (int width=35;width<=columns-1;width++) sOut.append(cHorBar);
 		} else {
-			for (int width=1;width<=columns;width++) sOut.append("─");
+			for (int width=1;width<=columns;width++) sOut.append(cHorBar);
 		}
 
-		sOut.append("┨").append("\n");
+		sOut.append(cRightBarBold).append("\n");
 
 		for (String[] sAction : asActions){
-			sOut.append("┃");
+			sOut.append(cVertBarBold);
 			if (sAction[0].equals("")) {
 				for (int k=0;k<=columns-1;k++) sOut.append(" ");
-				sOut.append("┃\n");
+				sOut.append(cVertBarBold).append("\n");
 			} else {
-				sOut.append(String.format(" %-56s %21s ┃%n", sAction[0], "'"+sAction[1]+"'"));
+				sOut.append(String.format(" %-56s %21s %c%n", sAction[0], "'"+sAction[1]+"'", cVertBarBold));
 			}
 		}
 
-		sOut.append("┗");
-		for (int width=1;width<=columns;width++) sOut.append("━");
-		sOut.append("┛\n");
+		sOut.append(cBottomRightCornerBold);
+		for (int width=1;width<=columns;width++) sOut.append(cHorBarBold);
+		sOut.append(cBottomLeftCornerBold).append("\n");
 
 		System.out.print(sOut.toString());
 		System.out.print(sInputOpt+" ->");
@@ -717,6 +802,7 @@ public class ClsMain {
 	private static void fnMenuSettings(){
 		sLastAction = "Einstellungen werden nicht bis zum nächsten start gespeichert!";
 		String sVt100;
+		String sBoxChars;
 		while (true) {
 
 			if (useVT100) {
@@ -724,8 +810,69 @@ public class ClsMain {
 			} else {
 				sVt100 = "C: AN/[AUS]";
 			}
+
+			if (useBoxChars) {
+				sBoxChars = "B: [AN]/AUS";
+			} else {
+				sBoxChars = "B: AN/[AUS]";
+			}
+
+			if (useBoxChars) {
+				//┏
+				cTopRightCornerBold = '┏';
+				//┓
+				cTopLeftCornerBold = '┓';
+				//┠
+				cLeftBarBold = '┠';
+				//┨
+				cRightBarBold = '┨';
+				//┗
+				cBottomRightCornerBold = '┗';
+				//┯
+				cBottomCrossBold = '┯';
+				//━
+				cHorBarBold = '━';
+				//┛
+				cBottomLeftCornerBold = '┛';
+				//│
+				cVertBar = '│';
+				//┃
+				cVertBarBold = '┃';
+				//─
+				cHorBar = '─';
+				//┴
+				cTopCross = '┴';
+			} else {
+				//┏
+				cTopRightCornerBold = '+';
+				//┓
+				cTopLeftCornerBold = '+';
+				//┠
+				cLeftBarBold = '+';
+				//┨
+				cRightBarBold = '+';
+				//┗
+				cBottomRightCornerBold = '+';
+				//┯
+				cBottomCrossBold = '+';
+				//━
+				cHorBarBold = '-';
+				//┛
+				cBottomLeftCornerBold = '+';
+				//│
+				cVertBar = '|';
+				//┃
+				cVertBarBold = '|';
+				//─
+				cHorBar = '-';
+				//┴
+				cTopCross = '+';
+			}
+
+
 			String[][] asActions = new String[][]{
-					{"\"VT100 Control chars\" benutzen", sVt100},
+					{"\"VT100 Contol chars\" benutzen", sVt100},
+					{"\"Box chars\" benutzen", sBoxChars},
 					{"", ""},
 					{"Zurück", "Z"}
 			};
@@ -739,6 +886,14 @@ public class ClsMain {
 					} else {
 						sLastAction = "VT100 Control chars angeschaltet";
 						useVT100 = true;
+					}
+				case 'b':
+					if (useBoxChars) {
+						sLastAction = "Box chars ausgeschaltet";
+						useBoxChars = false;
+					} else {
+						sLastAction = "Box chars angeschaltet";
+						useBoxChars = true;
 					}
 					break;
 				case 'z':
@@ -814,7 +969,7 @@ public class ClsMain {
 					break;
 				case 'm':
 					boolean bSubMenuComb = true;
-                    while (bSubMenuComb) {
+					while (bSubMenuComb) {
 						String[][] asActionsComb = {
 								{"Um einen Bereich auszuwählen drücke", "A"},
 								{"Um einen Layer hinzuzufügen drücke", "L"},
@@ -825,11 +980,11 @@ public class ClsMain {
 								{"Zurück", "Z"}
 						};
 						String[][] asTooltipComb = {
-                            {"Ausgewählte Layer", Arrays.toString(aiCombLayer)},
-                            {"Target Layer", String.valueOf(iTargetLayer)},
-                            {"Bereich (X):", Arrays.toString(point0)},
-                            {"Bereich (Y):", Arrays.toString(point1)}
-                        };
+								{"Ausgewählte Layer", Arrays.toString(aiCombLayer)},
+								{"Target Layer", String.valueOf(iTargetLayer)},
+								{"Bereich (X):", Arrays.toString(point0)},
+								{"Bereich (Y):", Arrays.toString(point1)}
+						};
 						sLastAction = "Gib die Layer an die du Kombinieren möchtest";
 						fnDrawMenu(asActionsComb, true, asTooltipComb);
 						char cOptionComb = fnUserInput();
@@ -862,10 +1017,10 @@ public class ClsMain {
 									aiCombLayer[i] = Integer.parseInt(asCombLayer[i]);
 								}
 								break;
-                            case 'j':
-                                if (aiCombLayer.length<2) break;
-                                fnCombineLayers(aiCombLayer, iTargetLayer, point0, point1);
-                                return;
+							case 'j':
+								if (aiCombLayer.length<2) break;
+								fnCombineLayers(aiCombLayer, iTargetLayer, point0, point1);
+								return;
 							case 'z':
 								bSubMenuComb = false;
 								break;
@@ -873,7 +1028,7 @@ public class ClsMain {
 								sLastAction = "Du musst schon eine Option wählen";
 						}
 					}
-                    break;
+					break;
 				case 'z':
 					return;
 				default:
@@ -899,7 +1054,7 @@ public class ClsMain {
 			i += word.length();
 		}
 		return sOut.toString();
- 	}
+	}
 
 	private static char fnUserInput() {
 		String ui = sc.nextLine().toLowerCase(Locale.ROOT);
@@ -945,23 +1100,23 @@ public class ClsMain {
 		iSizeY = iNewSizeY;
 		iSizeX = iNewSizeX;
 
-        HashMap<String, Object> hmTemp = new HashMap<>();
-        hmTemp.put("iSizeX", iNewSizeX);
-        hmTemp.put("iSizeY", iNewSizeY);
-        hmTemp.put("bFileSaved", false);
-        hmTemp.put("sFileNameSave", "");
-        hmTemp.put("sFileNameLoad", "");
-        hmTemp.put("bFileLoaded", true);
-        hmTemp.put("iPosArray", iTargetLayer);
-        hmLayer.put(iCurrLayer, hmTemp);
+		HashMap<String, Object> hmTemp = new HashMap<>();
+		hmTemp.put("iSizeX", iNewSizeX);
+		hmTemp.put("iSizeY", iNewSizeY);
+		hmTemp.put("bFileSaved", false);
+		hmTemp.put("sFileNameSave", "");
+		hmTemp.put("sFileNameLoad", "");
+		hmTemp.put("bFileLoaded", true);
+		hmTemp.put("iPosArray", iTargetLayer);
+		hmLayer.put(iCurrLayer, hmTemp);
 
-        for (int[] line : aiTemp){
-            System.out.println(Arrays.toString(line));
-        }
+		for (int[] line : aiTemp){
+			System.out.println(Arrays.toString(line));
+		}
 
 		aiGrauWert.put(iTargetLayer, aiTemp);
 		iCurrLayer = iTargetLayer;
-	    sLastAction = "Bilder kombiniert";
+		sLastAction = "Bilder kombiniert";
 	}
 
 	private static void fnCreateLayer(int iNewLayer, int iNewSizeY, int iNewSizeX){
@@ -999,6 +1154,7 @@ public class ClsMain {
 		for (int y=point0[1]; y <= point1[1] - 1; y++) {
 			for (int x=point0[0]; x <= point1[0] - 1; x++) {
 				iVal = aiGrauWert.get(iCurrLayer)[y][x] + iAmount;
+
 				if (iVal < 0) {
 					iVal = 0;
 				}
@@ -1019,7 +1175,8 @@ public class ClsMain {
 		}
 	}
 
-	private static int[][] fnRunMask(double[][] aiMask, int iMaskSize, int[] point0, int[] point1) {
+	private static int[][] fnRunMask(double[][] aiMask, int iMaskSize, int[] point0, int[] point1){
+
 		int[][] aiOut; // New temporary array for image
 		int[][] aiTemp = new int[iSizeY][iSizeX]; // New temporary array for image
 		int iTmpVal;
@@ -1035,8 +1192,8 @@ public class ClsMain {
 				iTmpVal = 0;
 				iSteps = 0;
 
-				for (int yMask=-iMaskSize, iMaskIndY = 0; yMask<=iMaskSize-1; yMask++, iMaskIndY++){
-					for (int xMask=-iMaskSize, iMaskIndX=0; xMask<=iMaskSize-1; xMask++, iMaskIndX++){
+				for (int yMask=-iMaskSize, iMaskIndY = 0; yMask<=iMaskSize; yMask++, iMaskIndY++){
+					for (int xMask=-iMaskSize, iMaskIndX=0; xMask<=iMaskSize; xMask++, iMaskIndX++){
 						// Y calculations for pixel
 						iNewPosY = yImg + yMask;
 						if (iNewPosY < 0){continue;}
@@ -1058,12 +1215,43 @@ public class ClsMain {
 				aiTemp[yImg][xImg] = iTmpVal;
 			}
 		}
+
 		aiOut = aiGrauWert.get(iCurrLayer);
 		for (int y=point0[1]; y<=point1[1]-1; y++){
 			if (point1[0] - point0[0] >= 0)
 				System.arraycopy(aiTemp[y], point0[0], aiOut[y], point0[0], point1[0] - point0[0]);
 		}
 		return aiOut;
+	}
+
+	private static void fnEdgeDetect(int iAmount, int iSize, int[] point0, int[] point1){
+		//Generate mask for edge detection
+
+		double[][] mask1 = {
+				{-1, 0 ,1},
+				{-2, 0 ,2},
+				{-1, 0 ,1}
+		};
+		double[][] mask2 = {
+				{-1, -2, -1},
+				{ 0,  0,  0},
+				{ 1,  2,  1}
+		};
+
+		int[][] aiTemp1 = fnRunMask(mask1, 3, point0, point1);
+		int[][] aiTemp2 = fnRunMask(mask2, 3, point0, point1);
+		int[][] aiTempFinal = new int[iSizeY][iSizeX];
+
+
+		for (int y = point0[1]; y<=point1[1]-1; y++){
+			for (int x = point0[0]; x<=point1[0]-1; x++){
+				aiTempFinal[y][x] = (int) Math.sqrt(Math.pow(aiTemp1[y][x], 2) + Math.pow(aiTemp2[y][x], 2));
+			}
+		}
+
+		for (int y=0; y<=iSizeY-1; y++){
+			if (iSizeX - 1 + 1 >= 0) System.arraycopy(aiTempFinal[y], 0, aiGrauWert.get(iCurrLayer)[y], 0, iSizeX);
+		}
 	}
 
 	private static void fnBlurMean(int iAmount, int iSize, int[] position0, int[] position1) {
@@ -1082,7 +1270,7 @@ public class ClsMain {
 		}
 	}
 
-	private static void fnBlurGaussian(int iAmount, int iSize) {
+	private static void fnBlurGaussian(int iAmount, int iSize, int[] point0, int[]point1) {
 		double coeff = iAmount;
 		double denom = -0.012;
 		double sig_1 = 0.15;
@@ -1101,6 +1289,7 @@ public class ClsMain {
 					{"Um P zu ändern drücke:", "5"},
 					{"Um Koeffizient zu ändern drücke:", "6"},
 					{"Um Denominator zu ändern drücke:", "7"},
+					{"Um Den brerich zu ändern drücke:", "A"},
 					{"", ""},
 					{"Bestätigen:", "J"},
 					{"Zurück:", "Z"}
@@ -1113,7 +1302,9 @@ public class ClsMain {
 					{"P:", p+""},
 					{"Coeffizient:", coeff+""},
 					{"Denominator:", denom+""},
-					{"Kernel Größe:", iSize+""},
+					{"Bereich (X):", Arrays.toString(point0)},
+					{"Bereich (Y):", Arrays.toString(point1)}
+
 			};
 			fnDrawMenu(asActions, true, asTooltip);
 			char cOption = fnUserInput();
@@ -1210,6 +1401,11 @@ public class ClsMain {
 					System.out.println(sUi7);
 					denom = Double.parseDouble(sUi7);
 					break;
+				case 'a':
+					int[][] points = fnMenuArea(point0, point1);
+					point0 = points[0];
+					point1 = points[1];
+					break;
 				case 'z':
 					return;
 				case 'j':
@@ -1224,8 +1420,6 @@ public class ClsMain {
 						}
 					}
 					fnCreateMaskString(mask);
-					int[] point0 = {0, 0};
-					int[] point1 = {iSizeX, iSizeY};
 					try {
 						int[][] aiTemp = fnRunMask(mask, iSize, point0, point1);
 						for (int y = 0; y <= iSizeY - 1; y++) {
@@ -1279,8 +1473,6 @@ public class ClsMain {
 				{"Einstellungen", "E"},
 				{"Um das Programm zu beenden drücke", "Q"}
 		};
-
-
 		while (running) {
 			fnDrawMenu(asActions, false, null);
 			sLastAction = "";
