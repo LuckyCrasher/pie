@@ -608,6 +608,7 @@ public class ClsMain {
 	private static void fnDrawMenu(String[][] asActions, boolean bShowTooltip, String[][] asTooltip) {
 		String[][] asTempTooltip;
 		if (bShowTooltip) {
+			System.out.println(Arrays.deepToString(asTooltip));
 			//count line breaks for temp array
 			int iToolTipLinebreak = 0;
 			for (String[] tooltip : asTooltip) {
@@ -620,14 +621,14 @@ public class ClsMain {
 			for (String[] tooltip : asTooltip) {
 				asTempTooltip[i][0] = tooltip[0]; 					//standard beginning
 				String[] tooltipMulti = tooltip[1].split("\n");	//split because multiline
-				System.out.println(Arrays.toString(tooltipMulti));
 				j = 0;
+				System.out.println("ARRAY: " + Arrays.toString(tooltipMulti));
 				do {
-					System.out.println(tooltipMulti[j]);
+					System.out.println("J: " + j +" I: " + i);
 					asTempTooltip[i][1] = tooltipMulti[j];
 					i++;
 					j++;
-				} while (j < tooltipMulti.length);
+				} while (j <= tooltipMulti.length-1);
 			}
 			System.out.println(Arrays.deepToString(asTempTooltip));
 		} else {
@@ -749,6 +750,10 @@ public class ClsMain {
 	}
 
 	private static void fnMenuLayer(){
+		int [] point0; int[] point1;
+		point0 = new int[]{0, 0};
+		point1 = new int[]{iSizeX,iSizeY};
+
 		while (true) {
 			HashMap<String, Object> hmCurr = hmLayer.get(iCurrLayer);
 			int iLaySizX = Integer.parseInt(String.valueOf(hmCurr.get("iSizeX")));
@@ -757,20 +762,27 @@ public class ClsMain {
 			String[][] asActions = {
 					{"Um den Layer zu wechseln drücke", "W"},
 					{"Um einen layer zu erstellen drücke", "N"},
+					{"Um Layer zu Kombinieren drücke", "M"},
 					{"", ""},
 					{"Zurück", "Z"}
 			};
-			String sFilePathLoad = fnWrapper((String) hmCurr.get("sFileNameLoad"), sFsSeparator.charAt(0), 43);
-
+			String sFilePathLoad;
+			if (!hmCurr.get("sFileNameLoad").equals("")) {
+				sFilePathLoad = "\n" + fnWrapper((String) hmCurr.get("sFileNameLoad"), sFsSeparator.charAt(0), 43);
+			} else {
+				sFilePathLoad = "";
+			}
 			String[][] asTooltip = {
 					{"Layer Nummer:", String.valueOf(iCurrLayer)},
 					{"Layer Größe:", String.format("%dx%d", iLaySizX, iLaySizY)},
-					{"Geladen von:", "\n"+sFilePathLoad},
+					{"Geladen von:", sFilePathLoad},
 					{"Speicher Ort:", (String) hmCurr.get("sFileNameSave")},
 
 			};
 			fnDrawMenu(asActions, true, asTooltip);
 			char cOption = fnUserInput();
+			int iTargetLayer = iCurrLayer;
+			int[] aiCombLayer = new int[1];
 			switch (cOption) {
 				case 'w':
 					sLastAction = "Gib die Zahl des Layers ein";
@@ -779,7 +791,7 @@ public class ClsMain {
 					}
 					fnDrawMenu(asActions, true, asTooltip);
 					int iLayer = sc.nextInt();sc.nextLine();
-					if (iLayer<0|iLayer>7) {sLastAction="Layer nicht vorhanden"; break;}
+					if (!hmLayer.containsKey(iLayer)) {sLastAction="Layer nicht vorhanden"; break;}
 					iCurrLayer = iLayer;
 					break;
 				case 'n':
@@ -790,7 +802,7 @@ public class ClsMain {
 					sLastAction = "Gib an wie Groß der Layer sein\n" +
 							"soll. Diese Zahl wird beim Laden\n" +
 							"eines Bildes auf den Layer\nverändert";
-					sInputOpt = "z.B. 300x400";
+					sInputOpt = "z.B. 400x300";
 					fnDrawMenu(asActions, true, asTooltip);
 					String sSize = sc.nextLine();
 					if (!sSize.contains("x")){sLastAction="Du musst schon eine valide größe eingeben"; break;}
@@ -800,8 +812,72 @@ public class ClsMain {
 					fnCreateLayer(iNewLayer, iNewSizeY, iNewSizeX);
 					sLastAction = "Layer erstellt";
 					break;
+				case 'm':
+					boolean bSubMenuComb = true;
+                    while (bSubMenuComb) {
+						String[][] asActionsComb = {
+								{"Um einen Bereich auszuwählen drücke", "A"},
+								{"Um einen Layer hinzuzufügen drücke", "L"},
+								{"Um einen Layer zu entfernen drücke", "D"},
+								{"Um einen Ziel Layer zu wählen drücke", "T"},
+								{"", ""},
+								{"Bestätigen", "J"},
+								{"Zurück", "Z"}
+						};
+						String[][] asTooltipComb = {
+                            {"Ausgewählte Layer", Arrays.toString(aiCombLayer)},
+                            {"Target Layer", String.valueOf(iTargetLayer)},
+                            {"Bereich (X):", Arrays.toString(point0)},
+                            {"Bereich (Y):", Arrays.toString(point1)}
+                        };
+						sLastAction = "Gib die Layer an die du Kombinieren möchtest";
+						fnDrawMenu(asActionsComb, true, asTooltipComb);
+						char cOptionComb = fnUserInput();
+						switch (cOptionComb) {
+							case 'a':
+								int[][] points = fnMenuArea(point0, point1);
+								point0 = points[0]; point1 = points[1];
+								break;
+							case 't':
+								sLastAction = "Gib einen Ziel Layer ein";
+								fnDrawMenu(asActions, false, null);
+								String sTargetLay = sc.nextLine();
+								if (!Character.isDigit(sTargetLay.charAt(0))) break;
+								iTargetLayer = Integer.parseInt(sTargetLay);
+								break;
+							case 'l':
+								// Showing some Input Options
+								sInputOpt = sInputOpt.concat("Layer:");
+								for (int key : hmLayer.keySet()) {
+									sInputOpt = sInputOpt.concat(String.format(" %d", key));
+								}
+								sInputOpt = sInputOpt.concat(" z.B. (1,2,3)");
+								//Getting user input
+								fnDrawMenu(asActionsComb, false, null);
+								String sComLayer = sc.nextLine();
+								if (!Character.isDigit(sComLayer.charAt(0)) | sComLayer.length() < 2) break;
+								String[] asCombLayer = sComLayer.split(",");
+								aiCombLayer = new int[asCombLayer.length];
+								for (int i=0;i<=asCombLayer.length-1;i++) {
+									aiCombLayer[i] = Integer.parseInt(asCombLayer[i]);
+								}
+								break;
+                            case 'j':
+                                if (aiCombLayer.length<2) break;
+                                fnCombineLayers(aiCombLayer, iTargetLayer, point0, point1);
+                                return;
+							case 'z':
+								bSubMenuComb = false;
+								break;
+							default:
+								sLastAction = "Du musst schon eine Option wählen";
+						}
+					}
+                    break;
 				case 'z':
 					return;
+				default:
+					sLastAction = "Du musst schon eine Option wählen";
 			}
 
 		}
@@ -835,6 +911,58 @@ public class ClsMain {
 
 	// INTERFACE RELATED METHODS ------------- END
 	// IMAGE RELATED METHODS
+
+	private static void fnCombineLayers(int[] aiLayers, int iTargetLayer, int[] point0, int[] point1){
+		int iNewSizeY = 0, iNewSizeX = 0, iLayerX, iLayerY;
+		for (int layer : aiLayers){
+			iLayerX = (int) hmLayer.get(layer).get("iSizeX");
+			iLayerY = (int) hmLayer.get(layer).get("iSizeY");
+			if (iLayerX>iNewSizeX){
+				iNewSizeX = iLayerX;
+			}
+			if (iLayerY>iNewSizeY){
+				iNewSizeY = iLayerY;
+			}
+		}
+		int iPixel;
+		int[][] aiTemp = new int[iNewSizeY][iNewSizeX];
+		for (int y=point0[1];y<=point1[1]-1;y++){
+			for (int x=point0[0];x<=point1[0]-1;x++){
+				iPixel = 0;
+				for (int layer : aiLayers){
+					iPixel += aiGrauWert.get(layer)[y][x];
+				}
+				aiTemp[y][x] = iPixel/aiLayers.length;
+			}
+		}
+		for (int layer : aiLayers){
+			aiGrauWert.remove(layer);
+			hmLayer.remove(layer);
+		}
+		aiGrauWert.remove(iTargetLayer);
+		hmLayer.remove(iTargetLayer);
+
+		iSizeY = iNewSizeY;
+		iSizeX = iNewSizeX;
+
+        HashMap<String, Object> hmTemp = new HashMap<>();
+        hmTemp.put("iSizeX", iNewSizeX);
+        hmTemp.put("iSizeY", iNewSizeY);
+        hmTemp.put("bFileSaved", false);
+        hmTemp.put("sFileNameSave", "");
+        hmTemp.put("sFileNameLoad", "");
+        hmTemp.put("bFileLoaded", true);
+        hmTemp.put("iPosArray", iTargetLayer);
+        hmLayer.put(iCurrLayer, hmTemp);
+
+        for (int[] line : aiTemp){
+            System.out.println(Arrays.toString(line));
+        }
+
+		aiGrauWert.put(iTargetLayer, aiTemp);
+		iCurrLayer = iTargetLayer;
+	    sLastAction = "Bilder kombiniert";
+	}
 
 	private static void fnCreateLayer(int iNewLayer, int iNewSizeY, int iNewSizeX){
 		aiGrauWert.put(iNewLayer, new int[iNewSizeY][iNewSizeX]);
