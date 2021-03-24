@@ -15,12 +15,15 @@ public class ClsMain {
 
 	// FRAMEWORK RELATED CONSTANTS AND VARIABLES
 
+	//Implementation for Layers. Works like a dynamik list with Integer arrays of different sizes
+	//Imnformation about a layer is stored in {layer_num: {key_string: Information}}
 	private static final HashMap<Integer, int[][]> hiaiImage = new HashMap<>();
 	private static final HashMap<Integer, HashMap<String, Object>> hihsoLayerInfo = new HashMap<>();
 	private static int iCurrLayer = 0;
 	private static int iSizeX;
 	private static int iSizeY;
 
+	//Chars for menu drawing
 	private static char cTopRightCornerBold = '+';
 	private static char cTopLeftCornerBold = '+';
 	private static char cLeftBarBold = '+';
@@ -36,13 +39,15 @@ public class ClsMain {
 	private static char cCross = '+';
 	private static char cTopCrossBold = '+';
 
+	//information will be later replaced by Information in LayerInfo
 	private static boolean bFileSaved = true;
 	private static String sFileNameSave = "";
 	private static String sFileNameLoad = "";
 	private static boolean bFileLoaded = false;
 
+	//Global config values fo later use
 	private static String sInputOpt = "";
-	private static String sLastAction = "";
+	private static String sLastStatus = "";
 	private static boolean useVT100 = false;
 	private static boolean useBoxChars = false;
 	private static final Scanner sc = new Scanner(System.in);
@@ -63,7 +68,7 @@ public class ClsMain {
 		JLabel lbl;
 
 		if (!bFileLoaded) { // check if a file is already loaded
-			sLastAction = "Du musst vorher ein Bild Laden!!!";
+			sLastStatus = "Du musst vorher ein Bild Laden!!!";
 			return;
 		}
 		frame = new JFrame("Image Viewer");
@@ -77,7 +82,7 @@ public class ClsMain {
 		frame.getContentPane().add(lbl, BorderLayout.CENTER);
 		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
-		sLastAction += "Bild gezeigt";
+		sLastStatus += "Bild gezeigt";
 	}
 
 	private static String fnFileDialog(boolean mode){
@@ -177,18 +182,19 @@ public class ClsMain {
 		//
 		// Handles the Saving
 		//
+
 		String sFileNamePath;
 		File saveFile;
 		BufferedWriter w;
 
 		if (!bFileLoaded) { // check if a image is loaded
-			sLastAction = "Du musst vorher ein Bild Laden!!!";
+			sLastStatus = "Du musst vorher ein Bild Laden!!!";
 			return;
 		}
 		sFileNamePath = fnFileDialog(true);
 
 		if (sFileNamePath == null){ // If the file dialog was canceled
-			sLastAction += "Abgebrochen?";
+			sLastStatus += "Abgebrochen?";
 			return;
 		}
 
@@ -213,12 +219,11 @@ public class ClsMain {
 			w.flush();
 			w.close();
 			sFileNameSave = sFileNamePath;
-			sLastAction = "Bild gespeichert";
+			sLastStatus = "Bild gespeichert";
 			bFileSaved = true;
 		} catch (IOException e) {
-			sLastAction += "Beim schreiben der Datei ist ein fehler aufgetreten\n";
-			//sLastAction += Arrays.toString(e.getStackTrace());
-			sLastAction += "Vielleicht war der Name der Datei fehlerhaft\n";
+			sLastStatus = "Beim schreiben der Datei ist ein fehler aufgetreten\n"
+						+  "Vielleicht war der Name der Datei fehlerhaft\n";
 		}
 	}
 
@@ -241,7 +246,7 @@ public class ClsMain {
 		} else {
 			sFileNamePath = fnFileDialog(false);
 			if (sFileNamePath == null) {
-				sLastAction = "Abgebrochen?";
+				sLastStatus = "Abgebrochen?";
 				return;
 			}
 		}
@@ -263,7 +268,7 @@ public class ClsMain {
 			asHeader = sTemp.split(" ");
 			iSizeX = Integer.parseInt(asHeader[0]);
 			iSizeY = Integer.parseInt(asHeader[1]);
-			sLastAction += String.format("Größe des Bildes: X: %d Y: %d %n", iSizeX, iSizeY);
+			sLastStatus += String.format("Größe des Bildes: X: %d Y: %d %n", iSizeX, iSizeY);
 			hiaiImage.put(iCurrLayer, new int[iSizeY][iSizeX]);
 			for (int y = 0; y <= iSizeY - 1; y++) {
 				for (int x = 0; x <= iSizeX - 1; x++) {
@@ -273,6 +278,7 @@ public class ClsMain {
 			}
 			reader.close();
 
+			//write the Information to the LayerInfo for later use
 			hmTemp = new HashMap<>();
 			hmTemp.put("iSizeX", iSizeX);
 			hmTemp.put("iSizeY", iSizeY);
@@ -285,18 +291,23 @@ public class ClsMain {
 
 			sFileNameLoad = sFileNamePath;
 			bFileLoaded = true;
-			sLastAction = "Bild geladen";
+			sLastStatus = "Bild geladen";
 		} catch (IOException e) {
-			sLastAction += "Beim lesen der Datei ist ein fehler aufgetreten";
-			sLastAction += "Vielleicht war der Name der Datei fehlerhaft";
+			sLastStatus += "Beim lesen der Datei ist ein fehler aufgetreten";
+			sLastStatus += "Vielleicht war der Name der Datei fehlerhaft";
 		}
 	}
 
 	private static void fnClear() {
+		//
+		//Clears screen by either resetting the cursor or printing linebreak
+		//
 		if (useVT100) {
+			//Cursor reset code
 			char escCode = 0x1B;
 			int row = 0;
 			int column = 0;
+			//This is pretty cool right?
 			System.out.printf("%c[%d;%df", escCode, row, column);
 			System.out.printf("%c[2%c", escCode, 'J');
 		} else {
@@ -309,14 +320,34 @@ public class ClsMain {
 	// FRAMEWORK RELATED METHODS ------------- END
 	// INTERFACE RELATED METHODS
 
+	private static String fnMotd(){
+		//
+		// Just randomly prints one of these nice Motd's
+		//
+		int iRand = ThreadLocalRandom.current().nextInt(1,100);
+		String sMotd1 = "Wusstest du das man Bilder auch per argument laden kann?";
+		String sMotd2 = "Wusstest du das das Programm eigentlich ein wenig witzig sein soll?";
+		String sMotd3 = "";
+
+		switch (iRand) {
+			case 1: return sMotd1;
+			case 2: return sMotd2;
+			default: return sMotd3;
+		}
+	}
+
 	private static void fnTitle(){
+		//
+		// Just randomly prints one of these nice Titles
+		//
 		int iRand = ThreadLocalRandom.current().nextInt(1,4);
 		String title1 = "\n"+
 				"     ###### #### ###### \n" +
 				"     ##   ## ##  ##       \n" +
 				"     ######  ##  ####   \n" +
 				"     ##      ##  ##       \n" +
-				"     ##     #### ###### ";
+				"     ##     #### ###### \n"+
+				"     (PGM Image Editor)";
 
 		String title2 = ""+
 				"     ██████╗  ██╗ ███████╗\n" +
@@ -324,7 +355,8 @@ public class ClsMain {
 				"     ██████╔╝ ██║ █████╗  \n" +
 				"     ██╔═══╝  ██║ ██╔══╝  \n" +
 				"     ██║      ██║ ███████╗\n" +
-				"     ╚═╝      ╚═╝ ╚══════╝";
+				"     ╚═╝      ╚═╝ ╚══════╝\n"+
+				"     (PGM Image Editor)";
 
 		String title3 = ""+
 				"       _____ _____ ______ \n" +
@@ -332,15 +364,20 @@ public class ClsMain {
 				"      | |__) || | | |__   \n" +
 				"      |  ___/ | | |  __|  \n" +
 				"      | |    _| |_| |____ \n" +
-				"      |_|   |_____|______|";
+				"      |_|   |_____|______|\n"+
+				"      (PGM Image Editor)";
 		switch (iRand) {
 			case 1: System.out.println(title1);break;
-			case 2: if(useBoxChars){System.out.println(title2);break;}
+			case 2: if(useBoxChars){System.out.println(title2);break;}//this one only if box chars are enabled
 			case 3: System.out.println(title3);break;
 		}
 	}
 
-	private static int[][] fnMenuArea(int[] newPoint0, int[] newPoint1) {
+	private static int[][] fnMenuArea(int[] newPoint0, int[] newPoint1) throws Exception {
+		//
+		// Creates a nice menu to specify the area.
+		// Called by multiple functions in the code.
+		//
 		int[] oldPoint0 = newPoint0;
 		int[] oldPoint1 = newPoint1;
 		String[][] asActions;
@@ -349,7 +386,7 @@ public class ClsMain {
 		String sPointA;
 		String sPointB;
 
-		sLastAction = "Stelle den Bereich ein";
+		sLastStatus = "Stelle den Bereich ein";
 		while(true) {
 			asActions = new String[][]{
 					{"Um Punkt A zu ändern drücke:", "A"},
@@ -363,27 +400,29 @@ public class ClsMain {
 					{"Bereich (X):", Arrays.toString(newPoint0)},
 					{"Bereich (Y):", Arrays.toString(newPoint1)}
 			};
-			fnDrawMenu(asActions, true, asTooltip);
+			fnDrawMenu(asActions, asTooltip, "Currently selected area");
 			cOption = fnUserInput();
 			switch (cOption) {
 				case 'a':
-					sLastAction = "Gib neue Werte für Punkt A an:";
+					sLastStatus = "Gib neue Werte für Punkt A an:";
 					sInputOpt = "(0,0 - 400,300) A:";
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "Currently selected area");
 					sPointA = sc.nextLine();
+					//Check if everything is alright with the entered string...
 					if(!Character.isDigit(sPointA.charAt(0))|!sPointA.contains(",")) break;
 					newPoint0 = fnGetPtFromStr(sPointA);
 					break;
 				case 'b':
-					sLastAction = "Gib neue Werte für Punkt B an:";
+					sLastStatus = "Gib neue Werte für Punkt B an:";
 					sInputOpt = "(0,0 - 400,300) B:";
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "Currently selected area");
 					sPointB = sc.nextLine();
+					//Check if everything is alright with the entered string...
 					if(!Character.isDigit(sPointB.charAt(0))|!sPointB.contains(",")) break;
 					newPoint1 = fnGetPtFromStr(sPointB);
 					break;
 				case 'c':
-					sLastAction = "Ganze Bild Gewählt";
+					sLastStatus = "Ganze Bild Gewählt";
 					newPoint0 = new int[]{0, 0};
 					newPoint1 = new int[]{iSizeX, iSizeY};
 					break;
@@ -392,12 +431,16 @@ public class ClsMain {
 				case 'j':
 					return new int[][]{newPoint0, newPoint1};
 				default:
-					sLastAction = "Du musst schon eine\nvon den Optionen wählen";
+					sLastStatus = "Du musst schon eine\nvon den Optionen wählen";
 			}
 		}
 	}
 
-	private static void fnMenuLighten(){
+	private static void fnMenuLighten() throws Exception {
+		//
+		// Menu interaction for the lighten method
+		// values are then given in percent,
+		//
 		int iAmountL = 0;
 		int [] point0; int[] point1;
 		int[][] points;
@@ -423,17 +466,18 @@ public class ClsMain {
 					{"Bereich (Y):", Arrays.toString(point1)}
 			};
 
-			fnDrawMenu(asActions, true, asTooltip);
+			fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 			cOption = fnUserInput();
 			switch (cOption){
 				case 'h':
-					sLastAction = "Ändere die Helligkeit";
+					// see here, everything in percent
+					sLastStatus = "Ändere die Helligkeit";
 					asActions = new String[][]{
 							{"Gib eine Prozentzahl ein:", "-100% - 100%"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Helligkeit:", iAmountL+"%"}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					sUi = sc.nextLine().toLowerCase(Locale.ROOT);
 					if (sUi.equals("")) break;
 					if (sUi.contains("%")) sUi = sUi.replace("%", "");
@@ -441,6 +485,7 @@ public class ClsMain {
 					iAmountL = Integer.parseInt(sUi);
 					break;
 				case 'a':
+					//Function to set up the specified area
 					points = fnMenuArea(point0, point1);
 					point0 = points[0];
 					point1 = points[1];
@@ -450,29 +495,37 @@ public class ClsMain {
 				case 'b':
 				case 'j':
 					fnLighten(iAmountL, point0, point1);
-					sLastAction += "Bild Erhellt";
+					sLastStatus += "Bild Erhellt";
 					return;
 				default:
-					sLastAction = "Du musst schon eine\nvon den Optionen wählen";
+					sLastStatus = "Du musst schon eine\nvon den Optionen wählen";
 			}
 		}
 	}
 
 	private static void fnMenuShowInfo() {
+		//
+		// Shows some Information about the currently loaded Image
+		//
 		StringBuilder sTmp;
 		if (bFileLoaded) {
 			sTmp = new StringBuilder();
 			sTmp.append(String.format("Size:     %dx%d\n", iSizeX, iSizeY));
-			sTmp.append(String.format("Original Image Path:%n %s\n", sFileNameLoad));
+			sTmp.append(String.format("Layer:     %d\n", iCurrLayer));
+			sTmp.append(String.format("Original Image Path:%n%s\n", fnWrapper(sFileNameLoad, sFsSeparator.charAt(0), 77)));
 			if (!sFileNameSave.equals("")) sTmp.append(String.format("Saved to: %s\n", sFileNameSave));
 			sTmp.append("Bild Infos gezeigt");
-			sLastAction += sTmp.toString();
+			sLastStatus += sTmp.toString();
 		} else {
-			sLastAction += "Du musst zuerst eine Datei laden!!!";
+			sLastStatus += "Du musst zuerst eine Datei laden!!!";
 		}
 	}
 
-	private static void fnCreateMaskString(double[][] mask){
+	private static void fnCreateMaskString(double[][] mask) throws Exception {
+		//
+		// Creates the Table that will be showed after a convolution function was run
+		// Absolute overcomplicated function but still...
+		//
 		int iSize = mask.length;
 		String[][] asActions;
 		char cOption;
@@ -483,18 +536,19 @@ public class ClsMain {
 		c = 65;
 
 		if (iSize >17){
-			sLastAction = "Maske zu groß zum Anzeigen";
+			//mask may be too big to properly show, but you have the option
+			sLastStatus = "Maske zu groß zum Anzeigen";
 			asActions= new String[][]{
 					{"Dennoch Anzeigen", "J"},
 					{"Nicht zeigen", "N"}
 			};
-			fnDrawMenu(asActions, false, null);
+			fnDrawMenu(asActions,null, null);
 			cOption = fnUserInput();
 			if (cOption == 'n') return;
 		}
 		sMask = new StringBuilder();
 
-		sLastAction = "";
+		sLastStatus = "";
 		//Top border
 		sMask.append("  ").append(cTopRightCornerBold); //prepend some spaces
 		for (int i=1; i<=iSize-1; i++,c++) {
@@ -517,6 +571,7 @@ public class ClsMain {
 			sMask.append("  ").append(cLeftBarBold);
 			for (int j = 0; j <= iSize-2; j++) sMask.append(cHorBar).append(cHorBar).append(cHorBar).append(cCross);
 			//sMask.append(String.format("───┨\n %c┃", c));
+			// ^ that's the ame as that \|/
 			sMask.append(cHorBar).append(cHorBar).append(cHorBar).append(cRightBarBold).append("\n ").append(c).append(cVertBarBold);
 			for (int j = 0; j <= iSize - 2; j++) sMask.append("   ").append(cVertBar);
 			sMask.append("   ").append(cVertBar).append("\n");
@@ -531,32 +586,44 @@ public class ClsMain {
 		sMask.append(cBottomLeftCornerBold).append("\n");
 
 		//replace all empty space with NUMBERS
+		//was easier to create an empty table
 		for (double[] line: mask){
 			for (double val: line){
 				ind = sMask.indexOf("   ");
 				sMask.replace(ind, ind+3, String.format("%3.1f", val));
 			}
 		}
-
-
+		//Show the mask over the menu panel
 		System.out.println(sMask.toString());
-		sLastAction += sMask.toString();
+		sLastStatus += sMask.toString();
 	}
 
-	private static void fnMenuBlur() {
+	private static void fnMenuConvolve() throws Exception {
+		//
+		// Menu interaction for functions that convolve.
+		//
 		if (!bFileLoaded) {
-			sLastAction += "Du musst vorher ein Bild Laden!!!";
+			sLastStatus += "Du musst vorher ein Bild Laden!!!";
 			return;
 		}
 
-		int iAmountB = 1;
-		int iSizeB = 3;
-		int[] point0 = {0,0};
-		int[] point1 = {iSizeX, iSizeY};
-		String sBlurFunc = "Mean Blur";
+		// set some standards not good but good enough
+		boolean running;
+		int iAmountB;
+		int iSizeB;
+		int[] point0;
+		int[] point1;
+		String sBlurFunc;
 		String[][] asActions;
 
-		while (true){
+		running = true;
+		iAmountB = 1;
+		iSizeB = 3;
+		point0 = new int[]{0, 0};
+		point1 = new int[]{iSizeX, iSizeY};
+		sBlurFunc  = "Mean Blur";
+
+		while (running){
 			asActions = new String[][]{
 					{"Um die \"Convolute Function\" zu ändern drücke", "F"},
 					{"Um die stärke einzustellen drücke", "W"},
@@ -575,11 +642,12 @@ public class ClsMain {
 					{"Bereich (Y):", Arrays.toString(point1)}
 			};
 
-			fnDrawMenu(asActions, true, asTooltip);
+			fnDrawMenu(asActions, asTooltip,"(Aktuelle Einstellungen)");
 			char cBlurOpt = fnUserInput();
 			switch (cBlurOpt){
 				case 'f':
-					sLastAction = "Wähle eine Funktion";
+					sLastStatus = "Wähle eine Funktion";
+					//each submenu needs a new loop or function so...
 					boolean subMenF = true;
 					while(subMenF) {
 						asActions = new String[][]{
@@ -587,51 +655,51 @@ public class ClsMain {
 								{"Für einen \"Mean (Box) Blur\" drücke", "M"},
 								{"Für \"Edge Detection\" drücke", "E"}
 						};
-						fnDrawMenu(asActions, false, null);
+						fnDrawMenu(asActions, null, null);
 						char cBlurFn = fnUserInput();
 						switch (cBlurFn) {
 							case 'g':
 								sBlurFunc = "Gaussian Blur";
 								subMenF = false;
-								sLastAction = "Funktion gewählt.";
+								sLastStatus = "Funktion gewählt.";
 								break;
 							case 'm':
 								sBlurFunc = "Mean Blur";
 								subMenF = false;
-								sLastAction = "Funktion gewählt.";
+								sLastStatus = "Funktion gewählt.";
 								break;
 							case 'e':
 								sBlurFunc = "Edge Detection";
 								subMenF = false;
-								sLastAction = "Funktion gewählt.";
+								sLastStatus = "Funktion gewählt.";
 								break;
 							default:
-								sLastAction = "Du musst schon eine Funktion auswählen";
+								sLastStatus = "Du musst schon eine Funktion auswählen";
 						}
 					}
 					break;
 				case 'm':
-					sLastAction = "Gib eine Größe ein";
+					sLastStatus = "Gib eine Größe ein";
 					sInputOpt = "0 - 100";
 					asActions = new String[][]{
 							{"Gib eine Ganzzahl ein:", "1 - 100"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Größe:", iSizeB+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUiS = sc.nextLine().toLowerCase(Locale.ROOT);
 					if (!Character.isDigit(sUiS.charAt(0))) break;
 					iSizeB = Integer.parseInt(sUiS);
 					break;
 				case 'w':
-					sLastAction = "Gib eine Stärke ein";
+					sLastStatus = "Gib eine Stärke ein";
 					sInputOpt = "0 - 100";
 					asActions = new String[][]{
 							{"Gib eine Ganzzahl ein:", "1 - 100"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Stärke:", iAmountB+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip,"(Aktuelle Einstellungen)");
 					String sUiA = sc.nextLine().toLowerCase(Locale.ROOT);
 					if (!Character.isDigit(sUiA.charAt(0))) break;
 					iAmountB = Integer.parseInt(sUiA);
@@ -642,51 +710,68 @@ public class ClsMain {
 					point1 = points[1];
 					break;
 				case 'z':
-					return;
+					running = false;
+					break;
 				case 'b':
 				case 'j':
 					switch (sBlurFunc) {
 						case "Mean Blur":
 							fnBlurMean(iAmountB, iSizeB, point0, point1);
-							sLastAction += "Bild verwischt";
-							return;
+							sLastStatus = sLastStatus.concat("Bild verwischt");
+							running = false;
+							break;
 						case "Gaussian Blur":
 							fnBlurGaussian(iAmountB, iSizeB, point0, point1);
-							sLastAction += "Bild verwischt";
-							return;
+							sLastStatus = sLastStatus.concat("Bild verwischt");
+							running = false;
+							break;
 						case "Edge Detection":
 							fnEdgeDetect(iAmountB, iSizeB, point0, point1);
-							sLastAction += "Bild verwischt";
-							return;
+							sLastStatus = sLastStatus.concat("Bild verwischt");
+							running = false;
+							break;
 						default:
-							sLastAction = "Etwas ist falsch gelaufen...";
+							sLastStatus = "Etwas ist falsch gelaufen...";
 							break;
 					}
+				default:
+					sLastStatus = "Du musst schon eine\nvon den Optionen wählen";
 			}
-
 		}
 	}
 
-	private static void fnMenuInvert() {
-		if (!bFileLoaded) {
-			sLastAction += "Du musst vorher ein Bild Laden!!!";
+	private static void fnMenuInvert() throws Exception {
+		//
+		// Menu interaction for the Image invert function
+		//
+
+		if (!bFileLoaded) { //just a little check before unnecessary memory is stolen..
+			sLastStatus += "Du musst vorher ein Bild Laden!!!";
 			return;
 		}
-		String[][] asActions = {
-				{"Um einen Bereich auszuwählen drücke", "A"},
-				{"Bestätigen", "J"},
-				{"Zurück", "Z"}
-		};
-		int [] point0; int[] point1;
+
+		boolean running = true;
+		String[][] asActions;
+		String[][] asTooltip;
+		int [] point0;
+		int[] point1;
+
 		point0 = new int[]{0, 0};
 		point1 = new int[]{iSizeX,iSizeY};
-		sLastAction = "Bild Invertieren";
-		while (true) {
-			String[][] asTooltip = {
+
+
+		sLastStatus = "Bild Invertieren";
+		while (running) {
+			asActions = new String[][]{
+					{"Um einen Bereich auszuwählen drücke", "A"},
+					{"Bestätigen", "J"},
+					{"Zurück", "Z"}
+			};
+			asTooltip = new String[][]{
 					{"Bereich (X):", Arrays.toString(point0)},
 					{"Bereich (Y):", Arrays.toString(point1)}
 			};
-			fnDrawMenu(asActions, true, asTooltip);
+			fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 			char cOption = fnUserInput();
 			switch (cOption) {
 				case 'a':
@@ -695,30 +780,39 @@ public class ClsMain {
 					point1 = points[1];
 					break;
 				case 'z':
-					return;
+					running = false;
+					break;
 				case 'b':
 				case 'j':
 					fnInvert(point0, point1);
-					sLastAction = "Bild Invertiert";
-					return;
+					sLastStatus = "Bild Invertiert";
+					running = false;
+					break;
 				default:
-					sLastAction = "Du musst schon eine\nvon den Optionen wählen";
+					sLastStatus = "Du musst schon eine\nvon den Optionen wählen";
 			}
 		}
 	}
 
-	private static boolean fnMenuQuit() {
-		if (bFileSaved) {
+	private static boolean fnMenuQuit() throws Exception {
+		//
+		// little menu before you quit.
+		// Will be shown if user didn't save the edited file.
+		//
+		if (bFileSaved) { // just return end exits the program if file is already saved.
 			return true;
 		}
-		sLastAction = "Du hast noch nicht gespeichert!!";
-		String[][] asActions = {
+		sLastStatus = "Du hast noch nicht gespeichert!!";
+		String[][] asActions;
+
+		asActions = new String[][]{
 				{"Um zu speichern drücke", "S"},
 				{"Um Abzubrechen drücke", "A"},
 				{"Um trotzdem zu schließen drücke", "N"},
 		};
+		// yes an infinite loop but is easily readable.
 		while (true) {
-			fnDrawMenu(asActions, false, null);
+			fnDrawMenu(asActions, null,null);
 			char ans = fnUserInput();
 			switch (ans) {
 				case 's': {
@@ -732,14 +826,23 @@ public class ClsMain {
 					return false;
 				}
 				default: {
-					sLastAction = "Du musst schon Ja, Nein oder Abbrechen antworten";
+					sLastStatus = "Du musst schon Ja, Nein oder Abbrechen antworten";
 				}
 			}
 		}
 	}
 
-	private static void fnDrawMenu(String[][] asActions, boolean bShowTooltip, String[][] asTooltip) {
+	private static void fnDrawMenu(String[][] asActions, String[][] asTooltip, String sTooltipTitle) throws Exception {
+		//
+		// Draws all the menus.
+		// Overcomplicated but COOL...
+		//
+		boolean bShowTooltip;
+		int iLenTooltipTitle;
 		String[][] asTempTooltip;
+		bShowTooltip = asTooltip != null; //nice oneliner
+
+		//if a tooltip is given insert it into a temporary array
 		if (bShowTooltip) {
 			System.out.println(Arrays.deepToString(asTooltip));
 			//count line breaks for temp array
@@ -764,9 +867,7 @@ public class ClsMain {
 				} while (j <= tooltipMulti.length-1);
 			}
 			System.out.println(Arrays.deepToString(asTempTooltip));
-		} else {
-			asTempTooltip = asTooltip;
-		}
+		} else { asTempTooltip = null; }
 
 		fnClear();
 		fnTitle();
@@ -775,28 +876,35 @@ public class ClsMain {
 
 		// Top Line
 		sOut.append(cTopRightCornerBold);
-		for (int width=1;width<=10;width++) sOut.append(cHorBarBold);
-		sOut.append("(PGM IMAGE EDITOR)"); // 18 chars
+		for (int width=1;width<=3;width++) sOut.append(cHorBarBold);
+		sOut.append("(Status)"); // 8 chars
 		if (bShowTooltip) {
-			//TODO add Tooltip title
-			for (int width=28;width<=33;width++) sOut.append(cHorBarBold);
+			for (int width=11;width<=33;width++) sOut.append(cHorBarBold);
 			sOut.append(cBottomCrossBold);
-			for (int width=35;width<=columns-1;width++) sOut.append(cHorBarBold);
+			if (sTooltipTitle != null){
+				iLenTooltipTitle = sTooltipTitle.length();
+				if (iLenTooltipTitle > 40){ throw new Exception("Tooltip title too long..."); }
+				sOut.append(cHorBarBold).append(cHorBarBold).append(cHorBarBold);
+				sOut.append(sTooltipTitle);
+				for (int width=iLenTooltipTitle+38;width<=columns-1;width++) sOut.append(cHorBarBold);
+			} else {
+				for (int width=35;width<=columns-1;width++) sOut.append(cHorBarBold);
+			}
 		} else {
-			for (int width=28;width<=columns-1;width++) sOut.append(cHorBarBold);
+			for (int width=11;width<=columns-1;width++) sOut.append(cHorBarBold);
 		}
 		sOut.append(cTopLeftCornerBold).append("\n");
 
-		String[] sStatus = sLastAction.split("\n");
+		String[] asStatus = sLastStatus.split("\n");
 		if (bShowTooltip) {
 			int lenTooltip = asTempTooltip.length;
 
 			for (int line=0;line<=lenTooltip-1;line++) {
 				sOut.append(cVertBarBold);
 				//if sLastAction is not empty | aah whatever
-				if (!sStatus[0].equals("") && line<sStatus.length-1) {
-					//Print line of sStatus (sLastAction)
-					sOut.append(String.format(" %-33s%c", sStatus[line], cVertBar));
+				if (!asStatus[0].equals("") && line<asStatus.length) {
+					//Print line of asStatus (sLastAction)
+					sOut.append(String.format(" %-33s%c", asStatus[line], cVertBar));
 				} else {
 					//sLastAction is empty so fill it with space
 					sOut.append(String.format(" %-33s%c", " ", cVertBar));
@@ -812,7 +920,7 @@ public class ClsMain {
 
 			}
 		} else {
-			for (String line : sStatus) {
+			for (String line : asStatus) {
 				sOut.append(cVertBarBold);
 				sOut.append(String.format(" %-79s%c%n", line, cVertBarBold));
 			}
@@ -847,8 +955,11 @@ public class ClsMain {
 		sInputOpt = "";
 	}
 
-	private static void fnMenuSettings(){
-		sLastAction = "Einstellungen werden nicht bis zum nächsten start gespeichert!";
+	private static void fnMenuSettings() throws Exception {
+		//
+		// Some smaller settings to interact with
+		//
+		sLastStatus = "Einstellungen werden nicht bis zum nächsten start gespeichert!";
 		String sVt100;
 		String sBoxChars;
 		while (true) {
@@ -864,7 +975,7 @@ public class ClsMain {
 			} else {
 				sBoxChars = "B: AN/[AUS]";
 			}
-
+			//this could work with lists or Hashmaps but booooring...
 			if (useBoxChars) {
 				//┏
 				cTopRightCornerBold = '┏';
@@ -928,36 +1039,40 @@ public class ClsMain {
 					{"", ""},
 					{"Zurück", "Z"}
 			};
-			fnDrawMenu(asActions, false, null);
+			fnDrawMenu(asActions, null, null);
 			char cOption = fnUserInput();
 			switch (cOption) {
 				case 'c':
 					if (useVT100) {
-						sLastAction = "VT100 Control chars ausgeschaltet";
+						sLastStatus = "VT100 Control chars ausgeschaltet";
 						useVT100 = false;
 					} else {
-						sLastAction = "VT100 Control chars angeschaltet";
+						sLastStatus = "VT100 Control chars angeschaltet";
 						useVT100 = true;
 					}
 					break;
 				case 'b':
 					if (useBoxChars) {
-						sLastAction = "Box chars ausgeschaltet";
+						sLastStatus = "Box chars ausgeschaltet";
 						useBoxChars = false;
 					} else {
-						sLastAction = "Box chars angeschaltet";
+						sLastStatus = "Box chars angeschaltet";
 						useBoxChars = true;
 					}
 					break;
 				case 'z':
 					return;
 				default:
-					sLastAction = "Du musst schon eine\nvon den Optionen wählen";
+					sLastStatus = "Du musst schon eine\nvon den Optionen wählen";
 			}
 		}
 	}
 
-	private static void fnMenuLayer(){
+	private static void fnMenuLayer() throws Exception {
+		//
+		// Menu to interact with the different layers
+		// Not fully bulletproof but still here...
+		//
 		int [] point0; int[] point1;
 		point0 = new int[]{0, 0};
 		point1 = new int[]{iSizeX,iSizeY};
@@ -987,38 +1102,40 @@ public class ClsMain {
 					{"Speicher Ort:", (String) hmCurr.get("sFileNameSave")},
 
 			};
-			fnDrawMenu(asActions, true, asTooltip);
+			fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 			char cOption = fnUserInput();
 			int iTargetLayer = iCurrLayer;
 			int[] aiCombLayer = new int[1];
 			switch (cOption) {
 				case 'w':
-					sLastAction = "Gib die Zahl des Layers ein";
+					sLastStatus = "Gib die Zahl des Layers ein";
 					for (int key: hihsoLayerInfo.keySet()){
 						sInputOpt = sInputOpt.concat(String.format("%d,", key));
 					}
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					int iLayer = sc.nextInt();sc.nextLine();
-					if (!hihsoLayerInfo.containsKey(iLayer)) {sLastAction="Layer nicht vorhanden"; break;}
+					if (!hihsoLayerInfo.containsKey(iLayer)) {
+						sLastStatus ="Layer nicht vorhanden"; break;}
 					iCurrLayer = iLayer;
 					break;
 				case 'n':
-					sLastAction = "Gib an welche Nummer\nder layer haben soll";
+					sLastStatus = "Gib an welche Nummer\nder layer haben soll";
 					sInputOpt="(Ganzzahl größer als 0)";
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					int iNewLayer = sc.nextInt();sc.nextLine();
-					sLastAction = "Gib an wie Groß der Layer sein\n" +
+					sLastStatus = "Gib an wie Groß der Layer sein\n" +
 							"soll. Diese Zahl wird beim Laden\n" +
 							"eines Bildes auf den Layer\nverändert";
 					sInputOpt = "z.B. 400x300";
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sSize = sc.nextLine();
-					if (!sSize.contains("x")){sLastAction="Du musst schon eine valide größe eingeben"; break;}
+					if (!sSize.contains("x")){
+						sLastStatus ="Du musst schon eine valide größe eingeben"; break;}
 					String[] asSize = sSize.split("x");
 					int iNewSizeX = Integer.parseInt(asSize[0]);
 					int iNewSizeY = Integer.parseInt(asSize[1]);
 					fnCreateLayer(iNewLayer, iNewSizeY, iNewSizeX);
-					sLastAction = "Layer erstellt";
+					sLastStatus = "Layer erstellt";
 					break;
 				case 'm':
 					boolean bSubMenuComb = true;
@@ -1038,8 +1155,8 @@ public class ClsMain {
 								{"Bereich (X):", Arrays.toString(point0)},
 								{"Bereich (Y):", Arrays.toString(point1)}
 						};
-						sLastAction = "Gib die Layer an die du Kombinieren möchtest";
-						fnDrawMenu(asActionsComb, true, asTooltipComb);
+						sLastStatus = "Gib die Layer an die du Kombinieren möchtest";
+						fnDrawMenu(asActionsComb, asTooltipComb, "(Aktuelle Einstellungen)");
 						char cOptionComb = fnUserInput();
 						switch (cOptionComb) {
 							case 'a':
@@ -1047,8 +1164,8 @@ public class ClsMain {
 								point0 = points[0]; point1 = points[1];
 								break;
 							case 't':
-								sLastAction = "Gib einen Ziel Layer ein";
-								fnDrawMenu(asActions, false, null);
+								sLastStatus = "Gib einen Ziel Layer ein";
+								fnDrawMenu(asActions, null, null);
 								String sTargetLay = sc.nextLine();
 								if (!Character.isDigit(sTargetLay.charAt(0))) break;
 								iTargetLayer = Integer.parseInt(sTargetLay);
@@ -1061,7 +1178,7 @@ public class ClsMain {
 								}
 								sInputOpt = sInputOpt.concat(" z.B. (1,2,3)");
 								//Getting user input
-								fnDrawMenu(asActionsComb, false, null);
+								fnDrawMenu(asActionsComb, null, null);
 								String sComLayer = sc.nextLine();
 								if (!Character.isDigit(sComLayer.charAt(0)) | sComLayer.length() < 2) break;
 								String[] asCombLayer = sComLayer.split(",");
@@ -1078,20 +1195,23 @@ public class ClsMain {
 								bSubMenuComb = false;
 								break;
 							default:
-								sLastAction = "Du musst schon eine Option wählen";
+								sLastStatus = "Du musst schon eine Option wählen";
 						}
 					}
 					break;
 				case 'z':
 					return;
 				default:
-					sLastAction = "Du musst schon eine Option wählen";
+					sLastStatus = "Du musst schon eine Option wählen";
 			}
 
 		}
 	}
 
 	private static String fnWrapper(String in, char cBreak, int len){
+		//
+		// Wraps input string at char after specified length.
+		//
 		StringBuilder sOut = new StringBuilder();
 		String sTemp;
 		String[] asTemp;
@@ -1110,6 +1230,10 @@ public class ClsMain {
 	}
 
 	private static char fnUserInput() {
+		//
+		// Handles the user Input
+		// returns weird char if something went wrong
+		//
 		String ui = sc.nextLine().toLowerCase(Locale.ROOT);
 		if (ui.equals("")) {
 			return '²';
@@ -1121,6 +1245,10 @@ public class ClsMain {
 	// IMAGE RELATED METHODS
 
 	private static void fnCombineLayers(int[] aiLayers, int iTargetLayer, int[] point0, int[] point1){
+		//
+		// Combines layers...
+		// Very unstable function but i like it.
+		//
 		int iNewSizeY = 0, iNewSizeX = 0, iLayerX, iLayerY;
 		for (int layer : aiLayers){
 			iLayerX = (int) hihsoLayerInfo.get(layer).get("iSizeX");
@@ -1169,10 +1297,13 @@ public class ClsMain {
 
 		hiaiImage.put(iTargetLayer, aiTemp);
 		iCurrLayer = iTargetLayer;
-		sLastAction = "Bilder kombiniert";
+		sLastStatus = "Bilder kombiniert";
 	}
 
 	private static void fnCreateLayer(int iNewLayer, int iNewSizeY, int iNewSizeX){
+		//
+		// Creates a new layer and paints it black.
+		//
 		hiaiImage.put(iNewLayer, new int[iNewSizeY][iNewSizeX]);
 		iSizeY = iNewSizeY;
 		iSizeX = iNewSizeX;
@@ -1189,12 +1320,19 @@ public class ClsMain {
 	}
 
 	private static void fnFillZeros(){
+		//
+		// Fills current layer with zeros (makes ist black)
+		//
 		for (int[] line : hiaiImage.get(iCurrLayer)){
 			Arrays.fill(line, 0);
 		}
 	}
 
 	private static int[] fnGetPtFromStr(String in) {
+		//
+		// Returns two inserted points.
+		// just some splitting...
+		//
 		String[] sPoint = in.split(",");
 		int x = Integer.parseInt(sPoint[0]);
 		int y = Integer.parseInt(sPoint[1]);
@@ -1202,12 +1340,15 @@ public class ClsMain {
 	}
 
 	private static void fnLighten(int iAmount, int[] point0, int[] point1) {
+		//
+		// Lightens the Image by a percentage.
+		//
 		iAmount = (int) (iAmount * 2.55);
 		int iVal;
 		for (int y=point0[1]; y <= point1[1] - 1; y++) {
 			for (int x=point0[0]; x <= point1[0] - 1; x++) {
+				//adds the new amount onto old pixel value
 				iVal = hiaiImage.get(iCurrLayer)[y][x] + iAmount;
-
 				if (iVal < 0) {
 					iVal = 0;
 				}
@@ -1217,10 +1358,14 @@ public class ClsMain {
 				hiaiImage.get(iCurrLayer)[y][x] = iVal;
 			}
 		}
-		sLastAction += "Bild Erhellt";
+		sLastStatus += "Bild Erhellt";
 	}
 
 	private static void fnInvert(int[] point0, int[] point1) {
+		//
+		// Inverts every pixel in the image.
+		// Nice linear function...
+		//
 		for (int y=point0[1]; y<=point1[1]-1;y++) {
 			for (int x=point0[0]; x<=point1[0]-1; x++){
 				hiaiImage.get(iCurrLayer)[y][x] = hiaiImage.get(iCurrLayer)[y][x]*-1 + 255;
@@ -1229,6 +1374,11 @@ public class ClsMain {
 	}
 
 	private static int[][] fnRunMask(double[][] aiMask, int iMaskSize, int[] point0, int[] point1){
+		//
+		// Runs a mask over an image and performs an operation.
+		// originally I wanted to specify a function as parameter that performs the operation,
+		// how do I do that?
+		//
 
 		int[][] aiOut; // New temporary array for image
 		int[][] aiTemp = new int[iSizeY][iSizeX]; // New temporary array for image
@@ -1258,9 +1408,11 @@ public class ClsMain {
 						if (iNewPosX >= iSizeX){continue;}
 
 						iTmpVal += hiaiImage.get(iCurrLayer)[iNewPosY][iNewPosX] * aiMask[iMaskIndY][iMaskIndX];
+						//here is where all the old math errors where fixed
 						iSteps += Math.abs(aiMask[iMaskIndY][iMaskIndX]);
 					}
 				}
+				//and here is where they happened...
 				iTmpVal /= iSteps;
 
 				if (iTmpVal < 0) {iTmpVal =0;}
@@ -1278,8 +1430,9 @@ public class ClsMain {
 	}
 
 	private static void fnEdgeDetect(int iAmount, int iSize, int[] point0, int[] point1){
-		//Generate mask for edge detection
-
+		//
+		// Generate mask for edge detection
+		// works, but not as intended
 		double[][] mask1 = {
 				{-1, 0 ,1},
 				{-2, 0 ,2},
@@ -1298,17 +1451,21 @@ public class ClsMain {
 
 		for (int y = point0[1]; y<=point1[1]-1; y++){
 			for (int x = point0[0]; x<=point1[0]-1; x++){
+				//calculate the gradient and insert it.
 				aiTempFinal[y][x] = (int) Math.sqrt(Math.pow(aiTemp1[y][x], 2) + Math.pow(aiTemp2[y][x], 2));
 			}
 		}
-
 		for (int y=0; y<=iSizeY-1; y++){
 			if (iSizeX - 1 + 1 >= 0) System.arraycopy(aiTempFinal[y], 0, hiaiImage.get(iCurrLayer)[y], 0, iSizeX);
 		}
 	}
 
-	private static void fnBlurMean(int iAmount, int iSize, int[] position0, int[] position1) {
-		// Generate Mask
+	private static void fnBlurMean(int iAmount, int iSize, int[] position0, int[] position1) throws Exception {
+		//
+		// Perform a Box Blur
+		//
+
+		// Create Mask
 		if (iSize % 2 == 0) iSize++;
 		double[][] mask = new double[iSize][iSize];
 		for (int i=0; i<=iSize-1; i++){
@@ -1323,7 +1480,12 @@ public class ClsMain {
 		}
 	}
 
-	private static void fnBlurGaussian(int iAmount, int iSize, int[] point0, int[]point1) {
+	private static void fnBlurGaussian(int iAmount, int iSize, int[] point0, int[]point1) throws Exception {
+		//
+		// Performs a Gaussian Blur
+		// Smart guy that Carl Gauss, pretty cool function
+		//
+
 		double coeff = iAmount;
 		double denom = -0.012;
 		double sig_1 = 0.15;
@@ -1331,7 +1493,7 @@ public class ClsMain {
 		double my_1 = 0;
 		double my_2 = 0;
 		double p = 0;
-		sLastAction = "Stelle deine Gaußglocke selbst\nein oder verwende das\nEingestellte.\n\nUm Mathematische Fehler" +
+		sLastStatus = "Stelle deine Gaußglocke selbst\nein oder verwende das\nEingestellte.\n\nUm Mathematische Fehler" +
 				" zu\nvermeiden wird die Glocke\nAutomatisch um Eins gehoben.";
 		while (true) {
 			String[][] asActions = new String[][]{
@@ -1359,96 +1521,96 @@ public class ClsMain {
 					{"Bereich (Y):", Arrays.toString(point1)}
 
 			};
-			fnDrawMenu(asActions, true, asTooltip);
+			fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 			char cOption = fnUserInput();
 			switch (cOption) {
 				case '1':
-					sLastAction = "Gib eine Kommazahl ein";
+					sLastStatus = "Gib eine Kommazahl ein";
 					sInputOpt = "0.001 - 1";
 					asActions = new String[][]{
 							{"Gib eine Kommazahl ein:", "0.001 - 1"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Zahl:", sig_1+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUi1 = sc.nextLine().toLowerCase(Locale.ROOT).replace(",", ".");
 					if (!Character.isDigit(sUi1.charAt(0))&&sUi1.charAt(0) == '-') break;
 					sig_1 = Double.parseDouble(sUi1);
 					break;
 				case '2':
-					sLastAction = "Gib eine Kommazahl ein";
+					sLastStatus = "Gib eine Kommazahl ein";
 					sInputOpt = "0.001 - 1";
 					asActions = new String[][]{
 							{"Gib eine Kommazahl ein:", "0.001 - 1"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Zahl:", sig_2+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUi2 = sc.nextLine().toLowerCase(Locale.ROOT).replace(",", ".");
 					if (!Character.isDigit(sUi2.charAt(0))&&sUi2.charAt(0) == '-') break;
 					sig_2 = Double.parseDouble(sUi2);
 					break;
 				case '3':
-					sLastAction = "Gib eine Kommazahl ein";
+					sLastStatus = "Gib eine Kommazahl ein";
 					sInputOpt = "-1 - 1";
 					asActions = new String[][]{
 							{"Gib eine Kommazahl ein:", "-1 - 1"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Zahl:", my_1+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUi3 = sc.nextLine().toLowerCase(Locale.ROOT).replace(",", ".");
 					if (!Character.isDigit(sUi3.charAt(0))&&sUi3.charAt(0) != '-') break;
 					my_1 = Double.parseDouble(sUi3);
 					break;
 				case '4':
-					sLastAction = "Gib eine Kommazahl ein";
+					sLastStatus = "Gib eine Kommazahl ein";
 					sInputOpt = "-1 - 1";
 					asActions = new String[][]{
 							{"Gib eine Kommazahl ein:", "-1 - 1"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Zahl:", my_2+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUi4 = sc.nextLine().toLowerCase(Locale.ROOT).replace(",", ".");
 					if (!Character.isDigit(sUi4.charAt(0))&&sUi4.charAt(0) != '-') break;
 					my_2 = Double.parseDouble(sUi4);
 					break;
 				case '5':
-					sLastAction = "Gib eine Kommazahl ein";
+					sLastStatus = "Gib eine Kommazahl ein";
 					sInputOpt = "-1 - 1";
 					asActions = new String[][]{
 							{"Gib eine Kommazahl ein:", "-1 - 1"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Zahl:", p+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUi5 = sc.nextLine().toLowerCase(Locale.ROOT).replace(",", ".");
 					if (!Character.isDigit(sUi5.charAt(0))&&sUi5.charAt(0) != '-') break;
 					p = Double.parseDouble(sUi5);
 					break;
 				case '6':
-					sLastAction = "Gib eine Kommazahl ein";
+					sLastStatus = "Gib eine Kommazahl ein";
 					sInputOpt = "-5 - 5";
 					asActions = new String[][]{
 							{"Gib eine Kommazahl ein:", "-5 - 5"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Zahl:", coeff+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUi6 = sc.nextLine().toLowerCase(Locale.ROOT).replace(",", ".");
 					if (!Character.isDigit(sUi6.charAt(0))&&sUi6.charAt(0) != '-') break;
 					coeff = Double.parseDouble(sUi6);
 					break;
 				case '7':
-					sLastAction = "Gib eine Kommazahl ein";
+					sLastStatus = "Gib eine Kommazahl ein";
 					sInputOpt = "-1 - 1";
 					asActions = new String[][]{
 							{"Gib eine Kommazahl ein:", "-1 - 1"},
 							{"Zum Abbrechen drücke", "A"}
 					};
 					asTooltip = new String[][]{{"Eingestellte Zahl:", denom+""}};
-					fnDrawMenu(asActions, true, asTooltip);
+					fnDrawMenu(asActions, asTooltip, "(Aktuelle Einstellungen)");
 					String sUi7 = sc.nextLine().toLowerCase(Locale.ROOT).replace(",", ".");
 					if (!Character.isDigit(sUi7.charAt(0))&&sUi7.charAt(0) != '-') break;
 					System.out.println(sUi7);
@@ -1479,19 +1641,21 @@ public class ClsMain {
 							if (iSizeX - 1 + 1 >= 0) System.arraycopy(aiTemp[y], 0, hiaiImage.get(iCurrLayer)[y], 0, iSizeX);
 						}
 					} catch (ArithmeticException e) {
-						sLastAction = "Mathematischer fehlschlag";
-						//fnDrawStatus();
-						break;
+						sLastStatus = "Mathematischer fehlschlag";
+						throw new Exception(e);
 					}
 					return;
 				default:
-					sLastAction = "Du musst schon eine\nvon den Optionen wählen";
+					sLastStatus = "Du musst schon eine\nvon den Optionen wählen";
 			}
 		}
 	}
 
 	private static double fnGaussianNormal(int x, int y, double p, double my_1, double my_2,
 										   double sig_1, double sig_2, double coeff, double denom) {
+		//
+		// The math part that is required for the gaussian blur
+		//
 		double e = Math.E;
 
 		//a(x,y)=Coeff ℯ^(Denom (((x-μ_{1})^(2))/(σ_{1}^(2))-2 p (x-μ_{1}) (y-μ_{2})/(σ_{1} σ_{2})+((y-μ_{2})^(2))/(σ_{2}^(2))))
@@ -1505,16 +1669,20 @@ public class ClsMain {
 	// IMAGE RELATED METHODS ----------------- END
 
 	public static void main (String[] args) {
+		//
+		// Entry point have fun...
+		//
 		fnCreateLayer(0, 300, 400);
 		fnFillZeros();
+		bFileLoaded = true;
 		System.out.println(Arrays.toString(args));
 		if (args.length > 0){
 			String file = args[0];
 			fnLoadFromFile(file);
-			bFileLoaded = true;
-			sLastAction = "Bild geladen...";
+
+			sLastStatus = "Bild geladen...";
 		} else {
-			sLastAction = "Kein Bild geladen !!!";
+			sLastStatus = fnMotd();
 		}
 		boolean running = true;
 		String[][] asActions = {
@@ -1531,8 +1699,8 @@ public class ClsMain {
 		};
 		while (running) {
 			try {
-				fnDrawMenu(asActions, false, null);
-				sLastAction = "";
+				fnDrawMenu(asActions, null, null);
+				sLastStatus = "";
 				char cOption = fnUserInput();
 				switch (cOption) {
 					case 'd':
@@ -1547,7 +1715,7 @@ public class ClsMain {
 						bFileSaved = false;
 						break;
 					case 'b':
-						fnMenuBlur();
+						fnMenuConvolve();
 						bFileSaved = false;
 						break;
 					case 's':
@@ -1573,7 +1741,7 @@ public class ClsMain {
 						fnMenuSettings();
 						break;
 					default:
-						sLastAction = "Deine eingabe war fehlerhaft!!!";
+						sLastStatus = "Deine eingabe war fehlerhaft!!!";
 				}
 			} catch (Exception e){
 				fnClear();
